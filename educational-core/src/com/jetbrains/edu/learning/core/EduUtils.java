@@ -133,7 +133,7 @@ public class EduUtils {
         }
         task = task.copy();
       }
-      TaskFile taskFile = task.getTaskFile(StudyUtils.pathRelativeToTask(answerFile));
+      TaskFile taskFile = task.getTaskFile(StudyUtils.pathRelativeToTask(project, answerFile));
       if (taskFile == null) {
         return null;
       }

@@ -373,33 +373,16 @@ public class StudyProjectComponent implements ProjectComponent {
     public void fileCreated(@NotNull VirtualFileEvent event) {
       if (myProject.isDisposed()) return;
       final VirtualFile createdFile = event.getFile();
-      final VirtualFile taskDir = StudyUtils.getTaskDir(createdFile);
-      final Course course = StudyTaskManager.getInstance(myProject).getCourse();
-      if (course == null || !course.isStudy()) {
+      Task task = StudyUtils.getTaskForFile(myProject, createdFile);
+      if (task == null) {
         return;
       }
-      if (taskDir != null && taskDir.getName().contains(EduNames.TASK)) {
-        int taskIndex = EduUtils.getIndex(taskDir.getName(), EduNames.TASK);
-        final VirtualFile lessonDir = taskDir.getParent();
-        if (lessonDir != null && lessonDir.getName().contains(EduNames.LESSON)) {
-          int lessonIndex = EduUtils.getIndex(lessonDir.getName(), EduNames.LESSON);
-          List<Lesson> lessons = course.getLessons();
-          if (StudyUtils.indexIsValid(lessonIndex, lessons)) {
-            final Lesson lesson = lessons.get(lessonIndex);
-            final List<Task> tasks = lesson.getTaskList();
-            if (StudyUtils.indexIsValid(taskIndex, tasks)) {
-              final Task task = tasks.get(taskIndex);
-              final TaskFile taskFile = new TaskFile();
-              taskFile.initTaskFile(task, false);
-              taskFile.setUserCreated(true);
-              final String name = FileUtil.getRelativePath(taskDir.getPath(), createdFile.getPath(), '/');
-              taskFile.name = name;
-              //TODO: put to other steps as well
-              task.getTaskFiles().put(name, taskFile);
-            }
-          }
-        }
-      }
+      final TaskFile taskFile = new TaskFile();
+      taskFile.initTaskFile(task, false);
+      taskFile.setUserCreated(true);
+      final String name = StudyUtils.pathRelativeToTask(myProject, createdFile);
+      taskFile.name = name;
+      task.getTaskFiles().put(name, taskFile);
     }
   }
 }

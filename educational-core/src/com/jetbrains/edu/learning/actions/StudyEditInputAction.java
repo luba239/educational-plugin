@@ -67,7 +67,10 @@ public class StudyEditInputAction extends DumbAwareAction {
         public void selectionChanged(TabInfo oldSelection, TabInfo newSelection) {
           if (newSelection.getIcon() != null) {
             int tabCount = tabbedPane.getTabCount();
-            VirtualFile taskDir = StudyUtils.getTaskDir(openedFile);
+            Task task = StudyUtils.getTaskForFile(project, openedFile);
+            assert task != null;
+            VirtualFile taskDir = task.getTaskDir(project);
+            assert taskDir != null;
             VirtualFile testsDir = taskDir.findChild(EduNames.USER_TESTS);
             assert testsDir != null;
             UserTest userTest = createUserTest(testsDir, currentTask, studyTaskManager);

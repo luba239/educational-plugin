@@ -264,7 +264,7 @@ public class StudyUtils {
   @Nullable
   public static TaskFile getTaskFile(@NotNull final Project project, @NotNull final VirtualFile file) {
     Task task = getTaskForFile(project, file);
-    return task == null ? null : task.getTaskFile(pathRelativeToTask(file));
+    return task == null ? null : task.getTaskFile(pathRelativeToTask(project, file));
   }
 
   public static void drawAllAnswerPlaceholders(Editor editor, TaskFile taskFile) {
@@ -483,25 +483,6 @@ public class StudyUtils {
   }
 
   @Nullable
-  public static VirtualFile getTaskDir(@NotNull VirtualFile taskFile) {
-    VirtualFile parent = taskFile.getParent();
-
-    while (parent != null) {
-      String name = parent.getName();
-
-      if (name.contains(EduNames.TASK) && parent.isDirectory()) {
-        return parent;
-      }
-      if (EduNames.SRC.equals(name)) {
-        return parent.getParent();
-      }
-
-      parent = parent.getParent();
-    }
-    return null;
-  }
-
-  @Nullable
   public static Task getTaskForFile(@NotNull Project project, @NotNull VirtualFile file) {
     Course course = StudyTaskManager.getInstance(project).getCourse();
     if (course == null || project.getBasePath() == null) {
@@ -624,12 +605,14 @@ public class StudyUtils {
     return null;
   }
 
-  public static String pathRelativeToTask(VirtualFile file) {
-    VirtualFile taskDir = getTaskDir(file);
-    if (taskDir == null) return file.getName();
-    VirtualFile srcDir = taskDir.findChild(EduNames.SRC);
-    if (srcDir != null) {
-      taskDir = srcDir;
+  public static String pathRelativeToTask(@NotNull Project project, @NotNull VirtualFile file) {
+    Task task = getTaskForFile(project, file);
+    if (task == null) {
+      return file.getPath();
+    }
+    VirtualFile taskDir = task.getTaskDir(project);
+    if (taskDir == null) {
+      return file.getName();
     }
     return FileUtil.getRelativePath(taskDir.getPath(), file.getPath(), '/');
   }

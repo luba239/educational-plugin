@@ -48,7 +48,7 @@ class PyStudySmartChecker {
       final FileDocumentManager documentManager = FileDocumentManager.getInstance();
       final Document windowDocument = documentManager.getDocument(windowCopy);
       if (windowDocument != null) {
-        TaskFile windowTaskFile = answerTaskFile.getTask().copy().getTaskFile(StudyUtils.pathRelativeToTask(virtualFile));
+        TaskFile windowTaskFile = answerTaskFile.getTask().copy().getTaskFile(StudyUtils.pathRelativeToTask(project, virtualFile));
         if (windowTaskFile == null) {
           return;
         }
@@ -91,7 +91,7 @@ class PyStudySmartChecker {
     if (virtualFile == null) {
       return;
     }
-    Pair<VirtualFile, TaskFile> pair = getCopyWithAnswers(taskDir, virtualFile, taskFile);
+    Pair<VirtualFile, TaskFile> pair = getCopyWithAnswers(project, taskDir, virtualFile, taskFile);
     if (pair == null) {
       return;
     }
@@ -112,15 +112,15 @@ class PyStudySmartChecker {
     }
   }
 
-  static Pair<VirtualFile, TaskFile> getCopyWithAnswers(@NotNull final VirtualFile taskDir,
-                                                                @NotNull final VirtualFile file,
-                                                                @NotNull final TaskFile source) {
+  static Pair<VirtualFile, TaskFile> getCopyWithAnswers(Project project, @NotNull final VirtualFile taskDir,
+                                                        @NotNull final VirtualFile file,
+                                                        @NotNull final TaskFile source) {
     try {
       VirtualFile answerFile = file.copy(taskDir, taskDir, file.getNameWithoutExtension() + EduNames.ANSWERS_POSTFIX + "." + file.getExtension());
       final FileDocumentManager documentManager = FileDocumentManager.getInstance();
       final Document document = documentManager.getDocument(answerFile);
       if (document != null) {
-        TaskFile answerTaskFile = source.getTask().copy().getTaskFile(StudyUtils.pathRelativeToTask(file));
+        TaskFile answerTaskFile = source.getTask().copy().getTaskFile(StudyUtils.pathRelativeToTask(project, file));
         if (answerTaskFile == null) {
           return null;
         }
