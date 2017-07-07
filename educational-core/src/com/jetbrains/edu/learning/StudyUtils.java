@@ -552,17 +552,6 @@ public class StudyUtils {
     return result;
   }
 
-  @Nullable
-  public static Task getTaskFromSelectedEditor(Project project) {
-    final StudyEditor editor = getSelectedStudyEditor(project);
-    Task task = null;
-    if (editor != null) {
-      final TaskFile file = editor.getTaskFile();
-      task = file.getTask();
-    }
-    return task;
-  }
-
   public static String convertToHtml(@NotNull String content) {
     ArrayList<String> lines = ContainerUtil.newArrayList(content.split("\n|\r|\r\n"));
     if ((content.contains("<h") && content.contains("</h")) || (content.contains("<code>") && content.contains("</code>"))) {
