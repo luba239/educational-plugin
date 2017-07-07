@@ -79,6 +79,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.jetbrains.edu.learning.navigation.StudyNavigator.navigateToTask;
 
@@ -86,6 +88,7 @@ public class StudyUtils {
   private StudyUtils() {
   }
 
+  private static final Pattern TASK_FILE_PATH_PATTERN = Pattern.compile("lesson(\\d+)/task(\\d+)/.+");
   private static final Logger LOG = Logger.getInstance(StudyUtils.class.getName());
   private static final String ourPrefix = "<html><head><script type=\"text/x-mathjax-config\">\n" +
                                           "            MathJax.Hub.Config({\n" +
@@ -261,40 +264,34 @@ public class StudyUtils {
   @Nullable
   public static TaskFile getTaskFile(@NotNull final Project project, @NotNull final VirtualFile file) {
     final Course course = StudyTaskManager.getInstance(project).getCourse();
-    if (course == null) {
+    if (course == null || project.getBasePath() == null) {
       return null;
     }
-    VirtualFile taskDir = getTaskDir(file);
-    if (taskDir == null) {
+    String relativePath = FileUtil.getRelativePath(project.getBasePath(), file.getPath(), '/');
+    if (relativePath == null) {
       return null;
     }
-    //need this because of multi-module generation
-    if (EduNames.SRC.equals(taskDir.getName())) {
-      taskDir = taskDir.getParent();
-      if (taskDir == null) {
+    Matcher matcher = TASK_FILE_PATH_PATTERN.matcher(relativePath);
+    if (!matcher.matches()) {
+      return null;
+    }
+    try {
+      int lessonIndex = Integer.valueOf(matcher.group(1)) - 1;
+      if (lessonIndex >= course.getLessons().size()) {
         return null;
       }
-    }
-    final String taskDirName = taskDir.getName();
-    if (taskDirName.contains(EduNames.TASK)) {
-      final VirtualFile lessonDir = taskDir.getParent();
-      if (lessonDir != null) {
-        int lessonIndex = EduUtils.getIndex(lessonDir.getName(), EduNames.LESSON);
-        List<Lesson> lessons = course.getLessons();
-        if (!indexIsValid(lessonIndex, lessons)) {
-          return null;
-        }
-        final Lesson lesson = lessons.get(lessonIndex);
-        int taskIndex = EduUtils.getIndex(taskDirName, EduNames.TASK);
-        final List<Task> tasks = lesson.getTaskList();
-        if (!indexIsValid(taskIndex, tasks)) {
-          return null;
-        }
-        final Task task = tasks.get(taskIndex);
-        return task.getFile(pathRelativeToTask(file));
+      Lesson lesson = course.getLessons().get(lessonIndex);
+      int taskIndex = Integer.valueOf(matcher.group(2)) - 1;
+      if (taskIndex >= lesson.getTaskList().size()) {
+        return null;
       }
+      Task task = lesson.getTaskList().get(taskIndex);
+      return task.getTaskFile(pathRelativeToTask(file));
     }
-    return null;
+    catch (NumberFormatException e) {
+      LOG.error(e);
+      return null;
+    }
   }
 
   public static void drawAllAnswerPlaceholders(Editor editor, TaskFile taskFile) {
