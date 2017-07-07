@@ -42,10 +42,11 @@ public class PyCCCommandLineState extends PythonCommandLineState {
 
     VirtualFile testsFile = LocalFileSystem.getInstance().findFileByPath(myRunConfiguration.getPathToTest());
     assert testsFile != null;
-    myTaskDir = StudyUtils.getTaskDir(testsFile);
-    assert myTaskDir != null;
-    myTask = StudyUtils.getTask(myRunConfiguration.getProject(), myTaskDir);
+    Project project = myRunConfiguration.getProject();
+    myTask = StudyUtils.getTaskForFile(project, testsFile);
     assert myTask != null;
+    myTaskDir = myTask.getTaskDir(project);
+    assert myTaskDir != null;
   }
 
   @Override

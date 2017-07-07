@@ -88,7 +88,7 @@ public class StudyUtils {
   private StudyUtils() {
   }
 
-  private static final Pattern TASK_FILE_PATH_PATTERN = Pattern.compile("lesson(\\d+)/task(\\d+)/.+");
+  private static final Pattern TASK_FILE_PATH_PATTERN = Pattern.compile("lesson(\\d+)/task(\\d+).*");
   private static final Logger LOG = Logger.getInstance(StudyUtils.class.getName());
   private static final String ourPrefix = "<html><head><script type=\"text/x-mathjax-config\">\n" +
                                           "            MathJax.Hub.Config({\n" +
@@ -263,35 +263,8 @@ public class StudyUtils {
 
   @Nullable
   public static TaskFile getTaskFile(@NotNull final Project project, @NotNull final VirtualFile file) {
-    final Course course = StudyTaskManager.getInstance(project).getCourse();
-    if (course == null || project.getBasePath() == null) {
-      return null;
-    }
-    String relativePath = FileUtil.getRelativePath(project.getBasePath(), file.getPath(), '/');
-    if (relativePath == null) {
-      return null;
-    }
-    Matcher matcher = TASK_FILE_PATH_PATTERN.matcher(relativePath);
-    if (!matcher.matches()) {
-      return null;
-    }
-    try {
-      int lessonIndex = Integer.valueOf(matcher.group(1)) - 1;
-      if (lessonIndex >= course.getLessons().size()) {
-        return null;
-      }
-      Lesson lesson = course.getLessons().get(lessonIndex);
-      int taskIndex = Integer.valueOf(matcher.group(2)) - 1;
-      if (taskIndex >= lesson.getTaskList().size()) {
-        return null;
-      }
-      Task task = lesson.getTaskList().get(taskIndex);
-      return task.getTaskFile(pathRelativeToTask(file));
-    }
-    catch (NumberFormatException e) {
-      LOG.error(e);
-      return null;
-    }
+    Task task = getTaskForFile(project, file);
+    return task == null ? null : task.getTaskFile(pathRelativeToTask(file));
   }
 
   public static void drawAllAnswerPlaceholders(Editor editor, TaskFile taskFile) {
@@ -529,12 +502,35 @@ public class StudyUtils {
   }
 
   @Nullable
-  public static Task getTaskForFile(@NotNull Project project, @NotNull VirtualFile taskFile) {
-    VirtualFile taskDir = getTaskDir(taskFile);
-    if (taskDir == null) {
+  public static Task getTaskForFile(@NotNull Project project, @NotNull VirtualFile file) {
+    Course course = StudyTaskManager.getInstance(project).getCourse();
+    if (course == null || project.getBasePath() == null) {
       return null;
     }
-    return getTask(project, taskDir);
+    String relativePath = FileUtil.getRelativePath(project.getBasePath(), file.getPath(), '/');
+    if (relativePath == null) {
+      return null;
+    }
+    Matcher matcher = TASK_FILE_PATH_PATTERN.matcher(relativePath);
+    if (!matcher.matches()) {
+      return null;
+    }
+    try {
+      int lessonIndex = Integer.valueOf(matcher.group(1)) - 1;
+      if (lessonIndex >= course.getLessons().size()) {
+        return null;
+      }
+      Lesson lesson = course.getLessons().get(lessonIndex);
+      int taskIndex = Integer.valueOf(matcher.group(2)) - 1;
+      if (taskIndex >= lesson.getTaskList().size()) {
+        return null;
+      }
+      return lesson.getTaskList().get(taskIndex);
+    }
+    catch (NumberFormatException e) {
+      LOG.error(e);
+      return null;
+    }
   }
 
   // supposed to be called under progress
