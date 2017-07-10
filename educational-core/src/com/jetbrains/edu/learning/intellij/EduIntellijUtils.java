@@ -4,16 +4,14 @@ import com.intellij.codeInsight.daemon.impl.quickfix.OrderEntryFix;
 import com.intellij.execution.junit.JUnitExternalLibraryDescriptor;
 import com.intellij.ide.fileTemplates.FileTemplate;
 import com.intellij.ide.fileTemplates.FileTemplateManager;
-import com.intellij.ide.projectView.actions.MarkRootActionBase;
 import com.intellij.lang.Language;
-import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileTypes.LanguageFileType;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
-import com.intellij.openapi.module.ModuleUtilCore;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.roots.*;
+import com.intellij.openapi.roots.ExternalLibraryDescriptor;
+import com.intellij.openapi.roots.ModuleRootModificationUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.*;
@@ -39,41 +37,6 @@ public class EduIntellijUtils {
 
     private EduIntellijUtils() {
     }
-
-  private static void commitAndSaveModel(final ModifiableRootModel model) {
-        ApplicationManager.getApplication().runWriteAction(new Runnable() {
-            @Override
-            public void run() {
-                model.commit();
-                model.getProject().save();
-            }
-        });
-    }
-
-    @Nullable
-    private static ModifiableRootModel getModel(@NotNull VirtualFile dir, @NotNull Project project) {
-        final Module module = ModuleUtilCore.findModuleForFile(dir, project);
-        if (module == null) {
-            LOG.info("Module for " + dir.getPath() + " was not found");
-            return null;
-        }
-        return ModuleRootManager.getInstance(module).getModifiableModel();
-    }
-
-    static void markDirAsSourceRoot(@NotNull final VirtualFile dir, @NotNull final Project project) {
-        final ModifiableRootModel model = getModel(dir, project);
-        if (model == null) {
-            return;
-        }
-        final ContentEntry entry = MarkRootActionBase.findContentEntry(model, dir);
-        if (entry == null) {
-            LOG.info("Content entry for " + dir.getPath() + " was not found");
-            return;
-        }
-        entry.addSourceFolder(dir, false);
-        commitAndSaveModel(model);
-    }
-
 
     public static void addTemplate(@NotNull final Project project, @NotNull VirtualFile baseDir, @NotNull @NonNls final String templateName) {
         final FileTemplate template = FileTemplateManager.getInstance(project).getInternalTemplate(templateName);
