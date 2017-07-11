@@ -159,6 +159,9 @@ public abstract class Task implements StudyItem {
 
   @Nullable
   public VirtualFile getTaskDir(@NotNull final Project project) {
+    if (getLesson().getCourse().isTutorial()) {
+      return project.getBaseDir();
+    }
     String lessonDirName = EduNames.LESSON + String.valueOf(myLesson.getIndex());
     String taskDirName = EduNames.TASK + String.valueOf(myIndex);
     VirtualFile courseDir = project.getBaseDir();

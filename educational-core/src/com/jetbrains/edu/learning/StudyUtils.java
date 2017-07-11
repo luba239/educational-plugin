@@ -488,6 +488,9 @@ public class StudyUtils {
     if (course == null || project.getBasePath() == null) {
       return null;
     }
+    if (course.isTutorial()) {
+      return course.getLessons().get(0).getTaskList().get(0);
+    }
     String relativePath = FileUtil.getRelativePath(project.getBasePath(), file.getPath(), '/');
     if (relativePath == null) {
       return null;
