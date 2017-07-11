@@ -576,7 +576,7 @@ public class StudyUtils {
   }
 
   public static void registerStudyToolWindow(@Nullable final Course course, Project project) {
-    if (course != null && EduNames.PYCHARM.equals(course.getCourseType())) {
+    if (course != null) {
       final ToolWindowManager toolWindowManager = ToolWindowManager.getInstance(project);
       registerToolWindows(toolWindowManager, project);
       final ToolWindow studyToolWindow = toolWindowManager.getToolWindow(StudyToolWindowFactory.STUDY_TOOL_WINDOW);
