@@ -221,6 +221,10 @@ public class Course {
     return getName();
   }
 
+  public boolean isTutorial() {
+    return "Tutorial".equals(courseType);
+  }
+
   @Nullable
   public Task getAdditionalMaterialsTask() {
     final Lesson additionalMaterials = getLessons(true).stream().

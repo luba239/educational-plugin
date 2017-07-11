@@ -52,6 +52,6 @@ public class StudyTreeStructureProvider implements TreeStructureProvider, DumbAw
   }
 
   protected boolean shouldModify(@NotNull final Project project) {
-    return StudyUtils.isStudentProject(project);
+    return StudyUtils.isStudentProject(project) && !StudyTaskManager.getInstance(project).getCourse().isTutorial();
   }
 }
