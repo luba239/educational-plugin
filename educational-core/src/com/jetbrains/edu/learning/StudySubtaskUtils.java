@@ -10,6 +10,7 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Ref;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.io.FileUtilRt;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -56,10 +57,6 @@ public class StudySubtaskUtils {
     if (taskDir == null) {
       return;
     }
-    VirtualFile srcDir = taskDir.findChild(EduNames.SRC);
-    if (srcDir != null) {
-      taskDir = srcDir;
-    }
     int fromSubtaskIndex = task.getActiveSubtaskIndex();
     for (Map.Entry<String, TaskFile> entry : task.getTaskFiles().entrySet()) {
       String name = entry.getKey();
@@ -88,7 +85,7 @@ public class StudySubtaskUtils {
         taskFile.setHighlightErrors(false);
       }
     }
-    transformTestFile(project, toSubtaskIndex, taskDir);
+    transformTestFile(project, toSubtaskIndex, taskDir, task);
 
     // We want to dump current tool window editor state to subtask
     // before we will switch subtask
@@ -129,24 +126,43 @@ public class StudySubtaskUtils {
     }
   }
 
-  private static void transformTestFile(@NotNull Project project, int toSubtaskIndex, VirtualFile taskDir) {
+  private static void transformTestFile(@NotNull Project project,
+                                        int toSubtaskIndex,
+                                        VirtualFile taskDir,
+                                        @NotNull TaskWithSubtasks task) {
 
     String subtaskTestFileName = getTestFileName(project, toSubtaskIndex);
     if (subtaskTestFileName == null) {
       return;
     }
-    String nameWithoutExtension = FileUtil.getNameWithoutExtension(subtaskTestFileName);
-    String extension = FileUtilRt.getExtension(subtaskTestFileName);
-    VirtualFile subtaskTestFile = taskDir.findChild(nameWithoutExtension + ".txt");
-    if (subtaskTestFile != null) {
-      ApplicationManager.getApplication().runWriteAction(() -> {
-        try {
-          subtaskTestFile.rename(project, nameWithoutExtension + "." + extension);
+    final Ref<VirtualFile> subtaskTestFile = new Ref<>();
+    for (Map.Entry<String, String> entry : task.getTestsText().entrySet()) {
+      String name = entry.getKey();
+      if (name.contains(FileUtil.getNameWithoutExtension(subtaskTestFileName))) {
+        String nameWithoutExtension = FileUtil.getNameWithoutExtension(name);
+        String extension = FileUtil.getExtension(subtaskTestFileName);
+        subtaskTestFile.set(taskDir.findFileByRelativePath(nameWithoutExtension + ".txt"));
+        if (subtaskTestFile.get() != null) {
+          ApplicationManager.getApplication().runWriteAction(() -> {
+            try {
+              subtaskTestFile.get().rename(project, FileUtil.getNameWithoutExtension(subtaskTestFileName) + "." + extension);
+              if (toSubtaskIndex > 0) {
+                int indexOfMarker = nameWithoutExtension.indexOf(EduNames.SUBTASK_MARKER);
+                String prefix = nameWithoutExtension.substring(0, indexOfMarker + EduNames.SUBTASK_MARKER.length());
+                String oldFileName = prefix + (toSubtaskIndex - 1) + "." + extension;
+                VirtualFile oldFile = taskDir.findFileByRelativePath(oldFileName);
+                if (oldFile != null) {
+                  oldFile.rename(project, FileUtil.getNameWithoutExtension(oldFile.getName()) + ".txt");
+                }
+              }
+            }
+            catch (IOException e) {
+              LOG.error(e);
+            }
+          });
         }
-        catch (IOException e) {
-          LOG.error(e);
-        }
-      });
+        return;
+      }
     }
   }
 
