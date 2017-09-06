@@ -145,13 +145,11 @@ public class StudyProjectComponent implements ProjectComponent {
 
   private void addStepicWidget() {
     StudyStepicUserWidget widget = StudyUtils.getStepicWidget();
-    if (widget == null) {
-      StatusBar statusBar = WindowManager.getInstance().getStatusBar(myProject);
-      statusBar.addWidget(new StudyStepicUserWidget(), "before Position");
+    StatusBar statusBar = WindowManager.getInstance().getStatusBar(myProject);
+    if (widget != null) {
+      statusBar.removeWidget(StudyStepicUserWidget.ID);
     }
-    else {
-      widget.update();
-    }
+    statusBar.addWidget(new StudyStepicUserWidget(myProject), "before Position");
   }
 
   private void selectStep(@NotNull Course course) {

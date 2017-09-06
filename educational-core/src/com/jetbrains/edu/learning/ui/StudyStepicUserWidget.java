@@ -1,7 +1,9 @@
 package com.jetbrains.edu.learning.ui;
 
+import com.intellij.ide.BrowserUtil;
 import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Disposer;
@@ -13,8 +15,12 @@ import com.intellij.ui.HyperlinkAdapter;
 import com.intellij.ui.awt.RelativePoint;
 import com.intellij.util.ui.JBUI;
 import com.jetbrains.edu.learning.StudySettings;
+import com.jetbrains.edu.learning.StudyTaskManager;
 import com.jetbrains.edu.learning.StudyUtils;
+import com.jetbrains.edu.learning.actions.StudyUpdateRecommendationAction;
+import com.jetbrains.edu.learning.courseFormat.Course;
 import com.jetbrains.edu.learning.stepic.EduStepicConnector;
+import com.jetbrains.edu.learning.stepic.EduStepicNames;
 import com.jetbrains.edu.learning.stepic.StepicUser;
 import icons.EducationalCoreIcons;
 import org.jetbrains.annotations.NotNull;
@@ -23,23 +29,31 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 
 public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
   public static final String ID = "StepicUser";
   private JLabel myComponent;
+  private Project myProject;
+  private boolean myNewSolvedTasks;
 
 
-  public StudyStepicUserWidget() {
+  public StudyStepicUserWidget(Project project) {
+    myProject = project;
     StepicUser user = StudySettings.getInstance().getUser();
-    Icon icon = user == null ? EducationalCoreIcons.StepikOff : EducationalCoreIcons.Stepik;
+    Course course = StudyTaskManager.getInstance(myProject).getCourse();
+    assert course != null;
+    myNewSolvedTasks = EduStepicConnector.hasNewSolvedTasks(course);
+    Icon icon = getWidgetIcon(user, myNewSolvedTasks);
     myComponent = new JLabel(icon);
 
     new ClickListener() {
       @Override
       public boolean onClick(@NotNull MouseEvent e, int clickCount) {
         Point point = new Point(0, 0);
-        StepicUserComponent component = new StepicUserComponent(StudySettings.getInstance().getUser());
+        StepicUserComponent component = new StepicUserComponent(StudySettings.getInstance().getUser(), myNewSolvedTasks);
         final Dimension dimension = component.getPreferredSize();
         point = new Point(point.x - dimension.width, point.y - dimension.height);
         component.showComponent(new RelativePoint(e.getComponent(), point));
@@ -71,8 +85,22 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
 
   public void update() {
     StepicUser user = StudySettings.getInstance().getUser();
-    Icon icon = user == null ? EducationalCoreIcons.StepikOff : EducationalCoreIcons.Stepik;
+    Course course = StudyTaskManager.getInstance(myProject).getCourse();
+    assert course != null;
+    myNewSolvedTasks = EduStepicConnector.hasNewSolvedTasks(course);
+    Icon icon = getWidgetIcon(user, myNewSolvedTasks);
     myComponent.setIcon(icon);
+  }
+
+  private static Icon getWidgetIcon(StepicUser user, boolean newSolvedTasks) {
+    Icon icon;
+    if (user != null) {
+      icon = newSolvedTasks ? EducationalCoreIcons.StepikRefresh : EducationalCoreIcons.Stepik;
+    }
+    else {
+      icon = EducationalCoreIcons.StepikOff;
+    }
+    return icon;
   }
 
   @Override
@@ -81,18 +109,22 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
   }
 
 
-  private static class StepicUserComponent extends JPanel {
-
+  private class StepicUserComponent extends JPanel {
+    private static final int myLeftMargin = 10;
+    private static final int myTopMargin = 6;
+    private static final int myActionLabelIndent = 260;
     private JBPopup myPopup;
 
-    public StepicUserComponent(@Nullable StepicUser user) {
+    public StepicUserComponent(@Nullable StepicUser user, boolean newSolvedTasks) {
       super();
       BorderLayout layout = new BorderLayout();
       layout.setVgap(10);
       setLayout(layout);
 
       if (user == null) {
-        createUserPanel("You're not logged in", "Log in to Stepik", createAuthorizeUserListener());
+        JPanel statusPanel = createTextPanel("You're not logged in", null);
+        JPanel actionPanel = createActionPanel("Log in to Stepik", createAuthorizeUserListener());
+        add(constructPanel(statusPanel, actionPanel), BorderLayout.PAGE_START);
       }
       else {
         String firstName = user.getFirstName();
@@ -102,9 +134,20 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
           statusText = "You're logged in";
         }
         else {
-          statusText = "<html>You're logged in as <i>" + firstName + " " + lastName + "</i></html>";
+          statusText = "<html>You're logged in as <a href=\"\">" + firstName + " " + lastName + "</a></html>";
         }
-        createUserPanel(statusText, "Log out", createLogoutListener());
+        if (myNewSolvedTasks) {
+          String loadSolutionText = "<html> <a href=\"\">Load</a> solutions from Stepik</html>";
+          JPanel statusPanel = createTextPanel(statusText, createOpenProfileListener(user.getId()));
+          JPanel loadSolutionsPanel = createTextPanel(loadSolutionText, createLoadSolutionsListener());
+          JPanel actionPanel = createActionPanel("Log out", createLogoutListener());
+          add(constructPanel(statusPanel, loadSolutionsPanel, actionPanel), BorderLayout.PAGE_START);
+        }
+        else {
+          JPanel statusPanel = createTextPanel("You're not logged in", null);
+          JPanel actionPanel = createActionPanel("Log in to Stepik", createAuthorizeUserListener());
+          add(constructPanel(statusPanel, actionPanel), BorderLayout.PAGE_START);
+        }
       }
     }
 
@@ -130,32 +173,65 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
       };
     }
 
-    private void createUserPanel(@NotNull String statusText, @NotNull String actionLabelText, @NotNull HyperlinkAdapter listener) {
-      int left_margin = 10;
-      int top_margin = 6;
-      int action_label_indent = 260;
+    private MouseAdapter createOpenProfileListener(int userId) {
+      return new MouseAdapter() {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+          if (e.getClickCount() == 1) {
+            BrowserUtil.browse(EduStepicNames.STEPIC_URL + EduStepicNames.USERS + userId);
+            myPopup.cancel();
+          }
+        }
+      };
+    }
 
-      JPanel statusPanel = new JPanel(new BorderLayout());
-      JLabel statusLabel = new JLabel(statusText);
-      statusPanel.add(Box.createVerticalStrut(top_margin), BorderLayout.PAGE_START);
-      statusPanel.add(Box.createHorizontalStrut(left_margin), BorderLayout.WEST);
-      statusPanel.add(statusLabel, BorderLayout.CENTER);
+    private MouseAdapter createLoadSolutionsListener() {
+      return new MouseAdapter() {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+          if (e.getClickCount() == 1) {
+            if (StudyUpdateRecommendationAction.doUpdate(myProject)) {
+              myNewSolvedTasks = false;
+              myComponent.setIcon(getWidgetIcon(StudySettings.getInstance().getUser(), myNewSolvedTasks));
+            }
+            myPopup.cancel();
+          }
+        }
+      };
+    }
 
-      JPanel actionPanel = new JPanel(new BorderLayout());
-      HoverHyperlinkLabel actionLabel = new HoverHyperlinkLabel(actionLabelText);
-      actionLabel.addHyperlinkListener(listener);
-      actionPanel.add(Box.createHorizontalStrut(action_label_indent), BorderLayout.LINE_START);
-      actionPanel.add(actionLabel, BorderLayout.CENTER);
-      actionPanel.add(Box.createHorizontalStrut(left_margin), BorderLayout.EAST);
-
+    private JPanel constructPanel(JPanel ... panels) {
       JPanel mainPanel = new JPanel();
       BoxLayout layout = new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS);
       mainPanel.setLayout(layout);
-      mainPanel.add(statusPanel);
-      mainPanel.add(Box.createVerticalStrut(6));
-      mainPanel.add(actionPanel);
+      for (JPanel panel : panels) {
+        mainPanel.add(panel);
+        mainPanel.add(Box.createVerticalStrut(6));
+      }
 
-      add(mainPanel, BorderLayout.PAGE_START);
+      return mainPanel;
+    }
+
+    @NotNull
+    private JPanel createTextPanel(@NotNull String statusText, @Nullable MouseListener listener) {
+      JPanel statusPanel = new JPanel(new BorderLayout());
+      JLabel statusLabel = new JLabel(statusText);
+      statusLabel.addMouseListener(listener);
+      statusPanel.add(Box.createVerticalStrut(myTopMargin), BorderLayout.PAGE_START);
+      statusPanel.add(Box.createHorizontalStrut(myLeftMargin), BorderLayout.WEST);
+      statusPanel.add(statusLabel, BorderLayout.CENTER);
+      return statusPanel;
+    }
+
+    @NotNull
+    private JPanel createActionPanel(@NotNull String actionLabelText, @NotNull HyperlinkAdapter listener) {
+      JPanel actionPanel = new JPanel(new BorderLayout());
+      HoverHyperlinkLabel actionLabel = new HoverHyperlinkLabel(actionLabelText);
+      actionLabel.addHyperlinkListener(listener);
+      actionPanel.add(Box.createHorizontalStrut(myActionLabelIndent), BorderLayout.LINE_START);
+      actionPanel.add(actionLabel, BorderLayout.CENTER);
+      actionPanel.add(Box.createHorizontalStrut(myLeftMargin), BorderLayout.EAST);
+      return actionPanel;
     }
 
     @Override

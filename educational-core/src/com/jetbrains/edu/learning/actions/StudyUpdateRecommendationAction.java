@@ -17,6 +17,7 @@ import com.jetbrains.edu.learning.navigation.StudyNavigator;
 import com.jetbrains.edu.learning.stepic.EduAdaptiveStepicConnector;
 import com.jetbrains.edu.learning.stepic.EduStepicConnector;
 import com.jetbrains.edu.learning.stepic.StepicWrappers;
+import com.jetbrains.edu.learning.ui.StudyStepicUserWidget;
 import icons.EducationalCoreIcons;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,26 +36,33 @@ public class StudyUpdateRecommendationAction extends DumbAwareAction {
 
   @Override
   public void actionPerformed(AnActionEvent e) {
-    Project project = e.getProject();
+    if (doUpdate(e.getProject())) {
+      StudyStepicUserWidget widget = StudyUtils.getStepicWidget();
+      if (widget != null) {
+        widget.update();
+      }
+    }
+  }
+
+  public static boolean doUpdate(Project project) {
     assert project != null;
 
     Course course = StudyTaskManager.getInstance(project).getCourse();
     assert course != null;
-    ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
+    return ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
       ProgressManager.getInstance().getProgressIndicator().setIndeterminate(true);
       StudyUtils.execCancelable(() ->{
         if (course.isAdaptive()) {
-          updateAdaptiveCourse(project, course);
+          return updateAdaptiveCourse(project, course);
         }
         else {
-          updateCourse(project, course);
+          return updateCourse(project, course);
         }
-        return null;
       });
     }, "Synchronizing Course", true, project);
   }
 
-  private static void updateCourse(@NotNull Project project, @NotNull Course course) {
+  private static boolean updateCourse(@NotNull Project project, @NotNull Course course) {
     TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(project);
 
     for (Lesson lesson : course.getLessons()) {
@@ -64,7 +72,7 @@ public class StudyUpdateRecommendationAction extends DumbAwareAction {
       if (steps != null) {
         String[] progesses = steps.stream().map(step -> step.progress).toArray(String[]::new);
         Boolean[] solved = EduStepicConnector.isTasksSolved(progesses);
-        if (solved == null) return;
+        if (solved == null) return false;
         for (int i = 0; i < tasks.size(); i++) {
           Boolean isSolved = solved[i];
           Task task = tasks.get(i);
@@ -83,6 +91,8 @@ public class StudyUpdateRecommendationAction extends DumbAwareAction {
       VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
       openTask(project, course, selectedTaskFile);
     });
+
+    return true;
   }
 
   private static void openTask(@NotNull Project project, @NotNull Course course, TaskFile selectedTaskFile) {
@@ -118,7 +128,7 @@ public class StudyUpdateRecommendationAction extends DumbAwareAction {
     }
   }
 
-  private static void updateAdaptiveCourse(@NotNull Project project, @NotNull Course course) {
+  private static boolean updateAdaptiveCourse(@NotNull Project project, @NotNull Course course) {
     Lesson adaptiveLesson = course.getLessons().get(0);
     assert adaptiveLesson != null;
 
@@ -134,7 +144,10 @@ public class StudyUpdateRecommendationAction extends DumbAwareAction {
         VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
         StudyNavigator.navigateToTask(project, lastRecommendationOnStepik);
       });
+      return true;
     }
+
+    return false;
   }
 
   @Override
