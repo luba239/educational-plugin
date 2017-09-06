@@ -62,7 +62,7 @@ public class StudySyncCourseAction extends DumbAwareAction {
     }, "Synchronizing Course", true, project);
   }
 
-  private static boolean updateCourse(@NotNull Project project, @NotNull Course course) {
+  public static boolean updateCourse(@NotNull Project project, @NotNull Course course) {
     TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(project);
 
     for (Lesson lesson : course.getLessons()) {
@@ -95,7 +95,7 @@ public class StudySyncCourseAction extends DumbAwareAction {
     return true;
   }
 
-  private static void openTask(@NotNull Project project, @NotNull Course course, TaskFile selectedTaskFile) {
+  public static void openTask(@NotNull Project project, @NotNull Course course, TaskFile selectedTaskFile) {
     if (selectedTaskFile != null) {
       Lesson selectedLesson = selectedTaskFile.getTask().getLesson();
       int index = selectedTaskFile.getTask().getIndex();
@@ -107,7 +107,7 @@ public class StudySyncCourseAction extends DumbAwareAction {
     }
   }
 
-  private static void updateTaskFilesTexts(@NotNull Project project, Task task) {
+  public static void updateTaskFilesTexts(@NotNull Project project, Task task) {
     if (task instanceof TaskWithSubtasks) {
       return;
     }
