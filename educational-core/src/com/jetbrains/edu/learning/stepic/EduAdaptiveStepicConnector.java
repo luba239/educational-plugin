@@ -30,7 +30,6 @@ import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.courseFormat.*;
 import com.jetbrains.edu.learning.courseFormat.tasks.*;
 import com.jetbrains.edu.learning.navigation.StudyNavigator;
-import com.jetbrains.edu.learning.ui.StudyToolWindow;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
@@ -317,13 +316,13 @@ public class EduAdaptiveStepicConnector {
     lesson.getTaskList().set(taskIndex - 1, task);
 
     final String lessonName = EduNames.LESSON + lesson.getIndex();
-    updateProjectFiles(project, task, lessonName, course.getLanguageById(), true);
+    updateProjectFiles(project, task, lessonName, course.getLanguageById());
   }
 
   private static void updateProjectFiles(@NotNull Project project,
                                          @NotNull Task task,
                                          @NotNull String lessonName,
-                                         Language language, boolean createFromText) {
+                                         Language language) {
     final VirtualFile lessonDir = project.getBaseDir().findChild(lessonName);
     if (lessonDir == null) {
       return;
@@ -353,13 +352,6 @@ public class EduAdaptiveStepicConnector {
     }
 
     taskDir.delete(EduAdaptiveStepicConnector.class);
-  }
-
-  private static void setToolWindowText(@NotNull Project project, @NotNull Task task) {
-    final StudyToolWindow window = StudyUtils.getStudyToolWindow(project);
-    if (window != null) {
-      window.setTaskText(task.getTaskDescription(), project);
-    }
   }
 
   private static String getCodeTemplateForTask(@NotNull Language language,
