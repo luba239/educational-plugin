@@ -52,7 +52,6 @@ import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.core.EduUtils;
 import com.jetbrains.edu.learning.courseFormat.*;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
-import com.jetbrains.edu.learning.courseGeneration.StudyGenerator;
 import com.jetbrains.edu.learning.editor.StudyEditor;
 import com.jetbrains.edu.learning.editor.StudyEditorFactoryListener;
 import com.jetbrains.edu.learning.statistics.EduUsagesCollector;
@@ -68,7 +67,6 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -80,14 +78,14 @@ import static com.jetbrains.edu.learning.stepic.EduStepicNames.STEP_ID;
 
 public class StudyProjectComponent implements ProjectComponent {
   private static final Logger LOG = Logger.getInstance(StudyProjectComponent.class.getName());
-  private final Project myProject;
+  private final Project project;
   private FileCreatedByUserListener myListener;
   private final Map<Keymap, List<Pair<String, String>>> myDeletedShortcuts = new HashMap<>();
   private MessageBusConnection myBusConnection;
   public static final Key<Boolean> IS_TO_UPDATE = Key.create("IS_TO_UPDATE");
 
   private StudyProjectComponent(@NotNull final Project project) {
-    myProject = project;
+    this.project = project;
   }
 
   @Override
@@ -100,9 +98,9 @@ public class StudyProjectComponent implements ProjectComponent {
     MessageBusConnection connect = ApplicationManager.getApplication().getMessageBus().connect();
     connect.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, taskUpdatingListener());
 
-    StartupManager.getInstance(myProject).runWhenProjectIsInitialized(
+    StartupManager.getInstance(project).runWhenProjectIsInitialized(
       () -> {
-        Course course = StudyTaskManager.getInstance(myProject).getCourse();
+        Course course = StudyTaskManager.getInstance(project).getCourse();
         if (course == null) {
           LOG.warn("Opened project is with null course");
           return;
@@ -113,13 +111,13 @@ public class StudyProjectComponent implements ProjectComponent {
         }
 
         ApplicationManager.getApplication().invokeLater(() -> {
-          ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(myProject, "Loading Solutions") {
+          ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(project, "Loading Solutions") {
               @Override
               public void run(@NotNull ProgressIndicator indicator) {
                 assert myProject != null;
                 TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(myProject);
                 ArrayList<Task> tasksToUpdate = getSolvedTasksAndUpdateStatus(course, selectedTaskFile,
-                                                                              StudyProjectComponent.this.myProject);
+                                                                              StudyProjectComponent.this.project);
 
                 for (Task task : tasksToUpdate) {
                   StudySyncCourseAction.updateTaskFilesTexts(myProject, task);
@@ -136,7 +134,7 @@ public class StudyProjectComponent implements ProjectComponent {
             });
         });
 
-        StudyUtils.registerStudyToolWindow(course, myProject);
+        StudyUtils.registerStudyToolWindow(course, project);
         addStepicWidget();
         selectStep(course);
 
@@ -161,9 +159,9 @@ public class StudyProjectComponent implements ProjectComponent {
     myBusConnection.subscribe(EditorColorsManager.TOPIC, new EditorColorsListener() {
       @Override
       public void globalSchemeChange(EditorColorsScheme scheme) {
-        final StudyToolWindow toolWindow = StudyUtils.getStudyToolWindow(myProject);
+        final StudyToolWindow toolWindow = StudyUtils.getStudyToolWindow(project);
         if (toolWindow != null) {
-          toolWindow.updateFonts(myProject);
+          toolWindow.updateFonts(project);
         }
       }
     });
@@ -174,25 +172,17 @@ public class StudyProjectComponent implements ProjectComponent {
     return new FileEditorManagerListener() {
       @Override
       public void fileOpened(@NotNull FileEditorManager source, @NotNull VirtualFile file) {
-        StudyEditor studyEditor = StudyUtils.getSelectedStudyEditor(myProject);
-        TaskFile taskFile = StudyUtils.getTaskFile(myProject, file);
+        StudyEditor studyEditor = StudyUtils.getSelectedStudyEditor(project);
+        TaskFile taskFile = StudyUtils.getTaskFile(project, file);
         if (studyEditor != null && taskFile != null) {
           Task task = taskFile.getTask();
-          VirtualFile taskDir = task.getTaskDir(myProject);
+          VirtualFile taskDir = task.getTaskDir(project);
           if (taskDir != null) {
             Boolean toUpdate = taskDir.getUserData(IS_TO_UPDATE);
             if (toUpdate != null && toUpdate) {
-              disableEditor(StudyProjectComponent.this.myProject);
+              disableEditor(StudyProjectComponent.this.project);
             }
           }
-        }
-      }
-
-      @Override
-      public void fileClosed(@NotNull FileEditorManager source, @NotNull VirtualFile file) {
-        StudyEditor studyEditor = StudyUtils.getSelectedStudyEditor(myProject);
-        if (studyEditor != null) {
-          studyEditor.getEditor().setHeaderComponent(null);
         }
       }
     };
@@ -269,22 +259,22 @@ public class StudyProjectComponent implements ProjectComponent {
         notification.expire();
       }
     });
-    notification.notify(myProject);
+    notification.notify(project);
   }
 
   private void addStepicWidget() {
     StudyStepicUserWidget widget = StudyUtils.getStepicWidget();
-    StatusBar statusBar = WindowManager.getInstance().getStatusBar(myProject);
+    StatusBar statusBar = WindowManager.getInstance().getStatusBar(project);
     if (widget != null) {
       statusBar.removeWidget(StudyStepicUserWidget.ID);
     }
-    statusBar.addWidget(new StudyStepicUserWidget(myProject), "before Position");
+    statusBar.addWidget(new StudyStepicUserWidget(project), "before Position");
   }
 
   private void selectStep(@NotNull Course course) {
     int stepId = PropertiesComponent.getInstance().getInt(STEP_ID, 0);
     if (stepId != 0) {
-      navigateToStep(myProject, course, stepId);
+      navigateToStep(project, course, stepId);
     }
   }
 
@@ -294,24 +284,24 @@ public class StudyProjectComponent implements ProjectComponent {
                        new NotificationListener() {
                          @Override
                          public void hyperlinkUpdate(@NotNull Notification notification, @NotNull HyperlinkEvent event) {
-                           FileEditorManagerEx.getInstanceEx(myProject).closeAllFiles();
+                           FileEditorManagerEx.getInstanceEx(project).closeAllFiles();
 
                            ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
                              ProgressManager.getInstance().getProgressIndicator().setIndeterminate(true);
                              return execCancelable(() -> {
-                               updateCourse();
+                               EduStepicConnector.updateCourse(StudyProjectComponent.this.project);
                                return true;
                              });
-                           }, "Updating Course", true, myProject);
+                           }, "Updating Course", true, project);
                            EduUtils.synchronize();
                            course.setUpdated();
                          }
                        });
-    notification.notify(myProject);
+    notification.notify(project);
   }
 
   private void registerShortcuts() {
-    StudyToolWindow window = StudyUtils.getStudyToolWindow(myProject);
+    StudyToolWindow window = StudyUtils.getStudyToolWindow(project);
     if (window != null) {
       List<AnAction> actionsOnToolbar = window.getActions(true);
       for (AnAction action : actionsOnToolbar) {
@@ -326,82 +316,6 @@ public class StudyProjectComponent implements ProjectComponent {
       addShortcut(StudyNextWindowAction.ACTION_ID, new String[]{StudyNextWindowAction.SHORTCUT, StudyNextWindowAction.SHORTCUT2});
       addShortcut(StudyPrevWindowAction.ACTION_ID, new String[]{StudyPrevWindowAction.SHORTCUT});
     }
-  }
-
-  private void updateCourse() {
-    final Course currentCourse = StudyTaskManager.getInstance(myProject).getCourse();
-    if (currentCourse == null || !(currentCourse instanceof RemoteCourse)) return;
-    final Course course = EduStepicConnector.getCourse(myProject, (RemoteCourse)currentCourse);
-    if (course == null) return;
-    course.initCourse(false);
-
-    EduPluginConfigurator configurator = EduPluginConfigurator.INSTANCE.forLanguage(course.getLanguageById());
-    if (configurator == null) {
-      LOG.info("EduPluginConfigurator not found for language " + course.getLanguageById().getDisplayName());
-      return;
-    }
-
-    final ArrayList<Lesson> updatedLessons = new ArrayList<>();
-
-    int lessonIndex = 0;
-    for (Lesson lesson : course.getLessons(true)) {
-      lessonIndex += 1;
-      Lesson studentLesson = currentCourse.getLesson(lesson.getId());
-      final String lessonDirName = EduNames.LESSON + String.valueOf(lessonIndex);
-
-      final VirtualFile baseDir = myProject.getBaseDir();
-      final VirtualFile lessonDir = baseDir.findChild(lessonDirName);
-      if (lessonDir == null) {
-        try {
-          StudyGenerator.createLesson(lesson, baseDir);
-        }
-        catch (IOException e) {
-          LOG.error("Failed to create lesson");
-        }
-        lesson.setIndex(lessonIndex);
-        lesson.initLesson(currentCourse, false);
-        for (int i = 1; i <= lesson.getTaskList().size(); i++) {
-          Task task = lesson.getTaskList().get(i - 1);
-          task.setIndex(i);
-        }
-        updatedLessons.add(lesson);
-        continue;
-      }
-      studentLesson.setIndex(lessonIndex);
-      updatedLessons.add(studentLesson);
-
-      int index = 0;
-      final ArrayList<Task> tasks = new ArrayList<>();
-      for (Task task : lesson.getTaskList()) {
-        index += 1;
-        final Task studentTask = studentLesson.getTask(task.getStepId());
-        if (studentTask != null && StudyStatus.Solved.equals(studentTask.getStatus())) {
-          studentTask.setIndex(index);
-          tasks.add(studentTask);
-          continue;
-        }
-        task.initTask(studentLesson, false);
-        task.setIndex(index);
-
-        final String taskDirName = EduNames.TASK + String.valueOf(index);
-        final VirtualFile taskDir = lessonDir.findChild(taskDirName);
-
-        if (taskDir != null) return;
-        try {
-          StudyGenerator.createTask(task, lessonDir);
-        }
-        catch (IOException e) {
-          LOG.error("Failed to create task");
-        }
-        tasks.add(task);
-      }
-      studentLesson.updateTaskList(tasks);
-    }
-    currentCourse.setLessons(updatedLessons);
-
-    final Notification notification =
-      new Notification("Update.course", "Course update", "Current course is synchronized", NotificationType.INFORMATION);
-    notification.notify(myProject);
   }
 
   private void addShortcut(@NotNull final String actionIdString, @NotNull final String[] shortcuts) {
@@ -426,9 +340,9 @@ public class StudyProjectComponent implements ProjectComponent {
 
   @Override
   public void projectClosed() {
-    final Course course = StudyTaskManager.getInstance(myProject).getCourse();
+    final Course course = StudyTaskManager.getInstance(project).getCourse();
     if (course != null) {
-      final ToolWindow toolWindow = ToolWindowManager.getInstance(myProject).getToolWindow(StudyToolWindowFactory.STUDY_TOOL_WINDOW);
+      final ToolWindow toolWindow = ToolWindowManager.getInstance(project).getToolWindow(StudyToolWindowFactory.STUDY_TOOL_WINDOW);
       if (toolWindow != null) {
         toolWindow.getContentManager().removeAllContents(false);
       }
@@ -447,7 +361,7 @@ public class StudyProjectComponent implements ProjectComponent {
 
   @Override
   public void initComponent() {
-    EditorFactory.getInstance().addEditorFactoryListener(new StudyEditorFactoryListener(), myProject);
+    EditorFactory.getInstance().addEditorFactoryListener(new StudyEditorFactoryListener(), project);
     ActionManager.getInstance().addAnActionListener(new AnActionListener() {
       @Override
       public void beforeActionPerformed(AnAction action, DataContext dataContext, AnActionEvent event) {
@@ -499,10 +413,10 @@ public class StudyProjectComponent implements ProjectComponent {
   private class FileCreatedByUserListener implements VirtualFileListener {
     @Override
     public void fileCreated(@NotNull VirtualFileEvent event) {
-      if (myProject.isDisposed()) return;
+      if (project.isDisposed()) return;
       final VirtualFile createdFile = event.getFile();
       final VirtualFile taskDir = StudyUtils.getTaskDir(createdFile);
-      final Course course = StudyTaskManager.getInstance(myProject).getCourse();
+      final Course course = StudyTaskManager.getInstance(project).getCourse();
       if (course == null || !EduNames.STUDY.equals(course.getCourseMode())) {
         return;
       }

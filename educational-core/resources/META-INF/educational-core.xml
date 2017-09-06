@@ -84,6 +84,9 @@
             <add-to-group group-id="ProjectViewPopupMenu" anchor="before" relative-to-action="CutCopyPasteGroup"/>
         </action>
 
+        <action id="Edu.ResetCourse" popup="true" class="com.jetbrains.edu.learning.actions.StudyResetCourseAction">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="before" relative-to-action="CutCopyPasteGroup"/>
+        </action>
 
         <action id="Educational.BrowseCourses" class="com.jetbrains.edu.learning.newproject.EduBrowseCoursesAction">
             <add-to-group group-id="WelcomeScreen.QuickStart" anchor="first"/>

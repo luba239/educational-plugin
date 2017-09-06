@@ -4,6 +4,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.intellij.ide.BrowserUtil;
 import com.intellij.lang.LanguageExtensionPoint;
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
@@ -14,11 +16,13 @@ import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.edu.learning.EduPluginConfigurator;
 import com.jetbrains.edu.learning.StudySettings;
+import com.jetbrains.edu.learning.StudyTaskManager;
 import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.courseFormat.*;
 import com.jetbrains.edu.learning.courseFormat.tasks.PyCharmTask;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.courseFormat.tasks.TaskWithSubtasks;
+import com.jetbrains.edu.learning.courseGeneration.StudyGenerator;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -635,5 +639,83 @@ public class EduStepicConnector {
       LOG.warn("Failed getting section: " + lessonId);
     }
     return new Lesson();
+  }
+
+  public static void updateCourse(Project project) {
+    final Course currentCourse = StudyTaskManager.getInstance(project).getCourse();
+    if (currentCourse == null || !(currentCourse instanceof RemoteCourse)) return;
+    final Course course = getCourse(project, (RemoteCourse)currentCourse);
+    if (course == null) return;
+    course.initCourse(false);
+
+    EduPluginConfigurator configurator = EduPluginConfigurator.INSTANCE.forLanguage(course.getLanguageById());
+    if (configurator == null) {
+      LOG.info("EduPluginConfigurator not found for language " + course.getLanguageById().getDisplayName());
+      return;
+    }
+
+    final ArrayList<Lesson> updatedLessons = new ArrayList<>();
+
+    int lessonIndex = 0;
+    for (Lesson lesson : course.getLessons(true)) {
+      lessonIndex += 1;
+      Lesson studentLesson = currentCourse.getLesson(lesson.getId());
+      final String lessonDirName = EduNames.LESSON + String.valueOf(lessonIndex);
+
+      final VirtualFile baseDir = project.getBaseDir();
+      final VirtualFile lessonDir = baseDir.findChild(lessonDirName);
+      if (lessonDir == null) {
+        ApplicationManager.getApplication().invokeLater(() -> ApplicationManager.getApplication().runWriteAction(() -> {
+          try {
+            StudyGenerator.createLesson(lesson, baseDir);
+          }
+          catch (IOException e) {
+            LOG.error("Failed to create lesson");
+          }
+        }));
+        lesson.setIndex(lessonIndex);
+        lesson.initLesson(currentCourse, false);
+        for (int i = 1; i <= lesson.getTaskList().size(); i++) {
+          Task task = lesson.getTaskList().get(i - 1);
+          task.setIndex(i);
+        }
+        updatedLessons.add(lesson);
+        continue;
+      }
+      studentLesson.setIndex(lessonIndex);
+      updatedLessons.add(studentLesson);
+
+      int index = 0;
+      final ArrayList<Task> tasks = new ArrayList<>();
+      for (Task task : lesson.getTaskList()) {
+        index += 1;
+        final Task studentTask = studentLesson.getTask(task.getStepId());
+        if (studentTask != null && StudyStatus.Solved.equals(studentTask.getStatus())) {
+          studentTask.setIndex(index);
+          tasks.add(studentTask);
+          continue;
+        }
+        task.initTask(studentLesson, false);
+        task.setIndex(index);
+
+        final String taskDirName = EduNames.TASK + String.valueOf(index);
+        final VirtualFile taskDir = lessonDir.findChild(taskDirName);
+
+        if (taskDir != null) return;
+        try {
+          StudyGenerator.createTask(task, lessonDir);
+        }
+        catch (IOException e) {
+          LOG.error("Failed to create task");
+        }
+        tasks.add(task);
+      }
+      studentLesson.updateTaskList(tasks);
+    }
+    currentCourse.setLessons(updatedLessons);
+
+    final Notification notification =
+      new Notification("Update.course", "Course update", "Current course is synchronized", NotificationType.INFORMATION);
+    notification.notify(project);
   }
 }
