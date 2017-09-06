@@ -69,7 +69,7 @@ public class PyEduPluginConfigurator implements EduPluginConfigurator {
       taskDirectory.set(DirectoryUtil.createSubdirectories(taskDirName, parentDirectory, "\\/"));
       if (taskDirectory.isNull()) return;
 
-      if (course.isAdaptive() && !task.getTaskFiles().isEmpty()) {
+      if (EduNames.STUDY.equals(course.getCourseMode()) && !task.getTaskFiles().isEmpty()) {
         createTaskFilesFromText(task, taskDirectory.get());
       }
       else {
@@ -85,13 +85,14 @@ public class PyEduPluginConfigurator implements EduPluginConfigurator {
       return;
     }
 
-    for (TaskFile file : task.getTaskFiles().values()) {
-      try {
+    try {
+      for (TaskFile file : task.getTaskFiles().values()) {
         StudyGenerator.createTaskFile(taskDirectory.getVirtualFile(), file);
       }
-      catch (IOException e) {
-        LOG.warn(e.getMessage());
-      }
+      StudyGenerator.createTestFiles(taskDirectory.getVirtualFile(), task);
+    }
+    catch (IOException e) {
+      LOG.warn(e.getMessage());
     }
   }
 

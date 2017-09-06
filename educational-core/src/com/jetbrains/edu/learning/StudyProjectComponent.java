@@ -37,6 +37,7 @@ import com.intellij.util.messages.MessageBusConnection;
 import com.jetbrains.edu.learning.actions.StudyActionWithShortcut;
 import com.jetbrains.edu.learning.actions.StudyNextWindowAction;
 import com.jetbrains.edu.learning.actions.StudyPrevWindowAction;
+import com.jetbrains.edu.learning.actions.StudyUpdateRecommendationAction;
 import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.core.EduUtils;
 import com.jetbrains.edu.learning.courseFormat.*;
@@ -104,6 +105,13 @@ public class StudyProjectComponent implements ProjectComponent {
             registerShortcuts();
             EduUsagesCollector.projectTypeOpened(course.isAdaptive() ? EduNames.ADAPTIVE : EduNames.STUDY);
           }));
+
+        if (course instanceof RemoteCourse) {
+          boolean hasNewSolvedTasks = EduStepicConnector.hasNewSolvedTasks(course);
+          if (hasNewSolvedTasks) {
+            showSyncCourseNotification();
+          }
+        }
       }
     );
 
@@ -117,6 +125,22 @@ public class StudyProjectComponent implements ProjectComponent {
         }
       }
     });
+  }
+
+  private void showSyncCourseNotification() {
+    Notification notification = new Notification("Sync.Course", null, null, null,
+                                           "Looks like you solved some tasks since last time", NotificationType.INFORMATION , null);
+    notification.setImportant(true);
+    notification.addAction(new AnAction("Load solutions") {
+
+
+      @Override
+      public void actionPerformed(AnActionEvent e) {
+        new StudyUpdateRecommendationAction().actionPerformed(e);
+        notification.expire();
+      }
+    });
+    notification.notify(myProject);
   }
 
   private void addStepicWidget() {
