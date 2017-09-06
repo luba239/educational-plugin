@@ -37,7 +37,7 @@ import com.intellij.util.messages.MessageBusConnection;
 import com.jetbrains.edu.learning.actions.StudyActionWithShortcut;
 import com.jetbrains.edu.learning.actions.StudyNextWindowAction;
 import com.jetbrains.edu.learning.actions.StudyPrevWindowAction;
-import com.jetbrains.edu.learning.actions.StudyUpdateRecommendationAction;
+import com.jetbrains.edu.learning.actions.StudySyncCourseAction;
 import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.core.EduUtils;
 import com.jetbrains.edu.learning.courseFormat.*;
@@ -94,6 +94,8 @@ public class StudyProjectComponent implements ProjectComponent {
           updateAvailable(course);
         }
 
+
+
         StudyUtils.registerStudyToolWindow(course, myProject);
         addStepicWidget();
         selectStep(course);
@@ -136,7 +138,7 @@ public class StudyProjectComponent implements ProjectComponent {
 
       @Override
       public void actionPerformed(AnActionEvent e) {
-        new StudyUpdateRecommendationAction().actionPerformed(e);
+        new StudySyncCourseAction().actionPerformed(e);
         notification.expire();
       }
     });

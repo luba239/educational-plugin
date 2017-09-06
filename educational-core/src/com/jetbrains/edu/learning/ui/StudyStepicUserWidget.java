@@ -17,7 +17,7 @@ import com.intellij.util.ui.JBUI;
 import com.jetbrains.edu.learning.StudySettings;
 import com.jetbrains.edu.learning.StudyTaskManager;
 import com.jetbrains.edu.learning.StudyUtils;
-import com.jetbrains.edu.learning.actions.StudyUpdateRecommendationAction;
+import com.jetbrains.edu.learning.actions.StudySyncCourseAction;
 import com.jetbrains.edu.learning.courseFormat.Course;
 import com.jetbrains.edu.learning.stepic.EduStepicConnector;
 import com.jetbrains.edu.learning.stepic.EduStepicNames;
@@ -190,7 +190,7 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
         @Override
         public void mouseClicked(MouseEvent e) {
           if (e.getClickCount() == 1) {
-            if (StudyUpdateRecommendationAction.doUpdate(myProject)) {
+            if (StudySyncCourseAction.doUpdate(myProject)) {
               myNewSolvedTasks = false;
               myComponent.setIcon(getWidgetIcon(StudySettings.getInstance().getUser(), myNewSolvedTasks));
             }

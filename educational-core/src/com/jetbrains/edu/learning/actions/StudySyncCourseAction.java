@@ -27,10 +27,10 @@ import java.util.List;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getLastCorrectSubmissionFromStepik;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags;
 
-public class StudyUpdateRecommendationAction extends DumbAwareAction {
-  private static final Logger LOG = Logger.getInstance(StudyUpdateRecommendationAction.class);
+public class StudySyncCourseAction extends DumbAwareAction {
+  private static final Logger LOG = Logger.getInstance(StudySyncCourseAction.class);
 
-  public StudyUpdateRecommendationAction() {
+  public StudySyncCourseAction() {
     super("Synchronize Course", "Synchronize Course", EducationalCoreIcons.StepikRefresh);
   }
 

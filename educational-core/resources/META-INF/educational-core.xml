@@ -80,7 +80,7 @@
         </action>
 
         <action id="Educational.Stepik.UpdateRecommendation" popup="true"
-                class="com.jetbrains.edu.learning.actions.StudyUpdateRecommendationAction">
+                class="com.jetbrains.edu.learning.actions.StudySyncCourseAction">
             <add-to-group group-id="ProjectViewPopupMenu" anchor="before" relative-to-action="CutCopyPasteGroup"/>
         </action>
 
