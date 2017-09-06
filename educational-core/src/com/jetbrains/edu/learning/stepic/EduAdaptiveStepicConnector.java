@@ -49,7 +49,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getStep;
@@ -265,7 +264,7 @@ public class EduAdaptiveStepicConnector {
     task.initTask(lesson, false);
     boolean replaceCurrentTask = reactionToPost == TOO_HARD_RECOMMENDATION_REACTION || reactionToPost == TOO_BORING_RECOMMENDATION_REACTION;
     if (replaceCurrentTask) {
-      replaceCurrentTask(project, task, lesson);
+      replaceCurrentTask(project, task, lesson, lesson.taskList.size() - 1);
     }
     else {
       addAsNextTask(project, task, lesson);
@@ -309,21 +308,21 @@ public class EduAdaptiveStepicConnector {
     }));
   }
 
-  public static void replaceCurrentTask(@NotNull Project project, @NotNull Task task, @NotNull Lesson lesson) {
+  public static void replaceCurrentTask(@NotNull Project project, @NotNull Task task, @NotNull Lesson lesson, int taskIndex) {
     Course course = StudyTaskManager.getInstance(project).getCourse();
     assert course != null;
-
-    int taskIndex = lesson.getTaskList().size();
 
     task.setIndex(taskIndex);
     lesson.getTaskList().set(taskIndex - 1, task);
 
     final String lessonName = EduNames.LESSON + lesson.getIndex();
-    updateProjectFiles(project, task, lessonName, course.getLanguageById());
-    setToolWindowText(project, task);
+    updateProjectFiles(project, task, lessonName, course.getLanguageById(), true);
   }
 
-  private static void updateProjectFiles(@NotNull Project project, @NotNull Task task, @NotNull String lessonName, Language language) {
+  private static void updateProjectFiles(@NotNull Project project,
+                                         @NotNull Task task,
+                                         @NotNull String lessonName,
+                                         Language language, boolean createFromText) {
     final VirtualFile lessonDir = project.getBaseDir().findChild(lessonName);
     if (lessonDir == null) {
       return;
@@ -470,7 +469,7 @@ public class EduAdaptiveStepicConnector {
   }
 
   @Nullable
-  private static StepicWrappers.ResultSubmissionWrapper postResultsForCheck(@NotNull final CloseableHttpClient client,
+  public static StepicWrappers.ResultSubmissionWrapper postResultsForCheck(@NotNull final CloseableHttpClient client,
                                                                             @NotNull StepicWrappers.SubmissionToPostWrapper submissionToPostWrapper) {
     final CloseableHttpResponse response;
     try {

@@ -48,6 +48,8 @@ public class EduStepicConnector {
   //this prefix indicates that course can be opened by educational plugin
   private static final String ADAPTIVE_NOTE =
     "\n\nInitially, the adaptive system may behave somewhat randomly, but the more problems you solve, the smarter it becomes!";
+  private static final String OPEN_PLACEHOLDER_TAG = "<placeholder>";
+  private static final String CLOSE_PLACEHOLDER_TAG = "</placeholder>";
 
   private EduStepicConnector() {
   }
@@ -344,6 +346,51 @@ public class EduStepicConnector {
     return task;
   }
 
+  public static void setPlaceholdersFromTags(@NotNull TaskFile taskFile, @NotNull StepicWrappers.SolutionFile solutionFile) {
+    int lastIndex = 0;
+    StringBuilder builder = new StringBuilder(solutionFile.text);
+    List<AnswerPlaceholder> placeholders = taskFile.getActivePlaceholders();
+    for (AnswerPlaceholder placeholder : placeholders) {
+      int start = builder.indexOf(OPEN_PLACEHOLDER_TAG, lastIndex);
+      int end = builder.indexOf(CLOSE_PLACEHOLDER_TAG, start);
+      if (start == -1 || end == -1) {
+        break;
+      }
+      String placeholderText = builder.substring(start + OPEN_PLACEHOLDER_TAG.length(), end);
+      placeholder.setTaskText(placeholderText);
+      placeholder.setOffset(start);
+      placeholder.setLength(placeholderText.length());
+      builder.delete(end, end + CLOSE_PLACEHOLDER_TAG.length());
+      builder.delete(start, start + OPEN_PLACEHOLDER_TAG.length());
+      lastIndex = start + placeholderText.length();
+    }
+  }
+
+  public static String removeAllTags(@NotNull String text) {
+    String result = text.replaceAll(OPEN_PLACEHOLDER_TAG, "");
+    result = result.replaceAll(CLOSE_PLACEHOLDER_TAG, "");
+    return result;
+  }
+
+  @NotNull
+  public static List<StepicWrappers.SolutionFile> getLastCorrectSubmissionFromStepik(String stepId) throws IOException {
+    try {
+      URI url = new URIBuilder(EduStepicNames.SUBMISSIONS)
+        .addParameter("order", "desc")
+        .addParameter("status", "correct")
+        .addParameter("page", "1")
+        .addParameter("step", stepId).build();
+      StepicWrappers.Submission[] submissions = getFromStepik(url.toString(), StepicWrappers.SubmissionsWrapper.class).submissions;
+      if (submissions.length > 0) {
+        return submissions[0].reply.solution;
+      }
+    }
+    catch (URISyntaxException e) {
+      LOG.warn(e.getMessage());
+    }
+    return Collections.emptyList();
+  }
+
   private static void addPlaceholdersTexts(TaskFile file) {
     final String fileText = file.text;
     final List<AnswerPlaceholder> placeholders = file.getAnswerPlaceholders();
@@ -372,6 +419,68 @@ public class EduStepicConnector {
                          StepicWrappers.StepContainer.class).steps.get(0);
   }
 
+  public static List<StepicWrappers.StepSource> getSteps(int[] stepIds) {
+    try {
+      URIBuilder builder = new URIBuilder(EduStepicNames.STEPS);
+      for (int stepId : stepIds) {
+        builder.addParameter("ids[]", String.valueOf(stepId));
+      }
+      String url = builder.build().toString();
+      return getFromStepik(url, StepicWrappers.StepContainer.class).steps;
+    }
+    catch (IOException e) {
+      LOG.warn(e.getMessage());
+    }
+    catch (URISyntaxException e) {
+      LOG.warn(e.getMessage());
+    }
+
+    return null;
+  }
+
+  public static boolean hasNewSolvedTasks(@NotNull Course course) {
+    for (Lesson lesson : course.getLessons()) {
+      List<Task> tasks = lesson.getTaskList();
+      int[] ids = tasks.stream().mapToInt(task -> task.getStepId()).toArray();
+      List<StepicWrappers.StepSource> steps = getSteps(ids);
+      if (steps != null) {
+        String[] progesses = steps.stream().map(step -> step.progress).toArray(String[]::new);
+        Boolean[] solved = isTasksSolved(progesses);
+        if (solved == null) return false;
+        for (int i = 0; i < tasks.size(); i++) {
+          Boolean isSolved = solved[i];
+          Task task = tasks.get(i);
+          if (isSolved != null && isSolved && task.getStatus() != StudyStatus.Solved) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  @Nullable
+  public static Boolean[] isTasksSolved(String[] progresses) {
+    try {
+      URIBuilder builder = new URIBuilder(EduStepicNames.PROGRESS);
+      for (String progress : progresses) {
+        builder.addParameter("ids[]", progress);
+      }
+      String link = builder.build().toString();
+      List<StepicWrappers.ProgressContainer.Progress> progressList = getFromStepik(link, StepicWrappers.ProgressContainer.class).progresses;
+      return progressList.stream().map(progress -> progress.isPassed).toArray(Boolean[]::new);
+    }
+    catch (URISyntaxException e) {
+      LOG.warn(e.getMessage());
+    }
+    catch (IOException e) {
+      LOG.warn(e.getMessage());
+    }
+
+    return null;
+  }
+
   public static void postSolution(@NotNull final Task task, boolean passed, @NotNull final Project project) {
     if (task.getStepId() <= 0) {
       return;
@@ -396,7 +505,16 @@ public class EduStepicConnector {
           ApplicationManager.getApplication().runReadAction(() -> {
             final Document document = FileDocumentManager.getInstance().getDocument(virtualFile);
             if (document != null) {
-              files.add(new StepicWrappers.SolutionFile(fileName, document.getCharsSequence().toString()));
+              String text = document.getText();
+              int insertedTextLength = 0;
+              StringBuilder builder = new StringBuilder(text);
+              for (AnswerPlaceholder placeholder : fileEntry.getActivePlaceholders()) {
+                builder.insert(placeholder.getOffset() + insertedTextLength, OPEN_PLACEHOLDER_TAG);
+                builder.insert(placeholder.getOffset() + insertedTextLength + placeholder.getLength() + OPEN_PLACEHOLDER_TAG.length(),
+                               CLOSE_PLACEHOLDER_TAG);
+                insertedTextLength += OPEN_PLACEHOLDER_TAG.length() + CLOSE_PLACEHOLDER_TAG.length();
+              }
+              files.add(new StepicWrappers.SolutionFile(fileName, builder.toString()));
             }
           });
         }
@@ -428,7 +546,8 @@ public class EduStepicConnector {
     return attemptResponseString;
   }
 
-  private static void postSubmission(boolean passed, StepicWrappers.AttemptWrapper.Attempt attempt,
+  private static void postSubmission(boolean passed,
+                                     StepicWrappers.AttemptWrapper.Attempt attempt,
                                      ArrayList<StepicWrappers.SolutionFile> files) throws IOException {
     final HttpPost request = new HttpPost(EduStepicNames.STEPIC_API_URL + EduStepicNames.SUBMISSIONS);
 
