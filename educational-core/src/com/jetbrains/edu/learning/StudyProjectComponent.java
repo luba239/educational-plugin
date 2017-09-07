@@ -67,6 +67,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,7 @@ public class StudyProjectComponent implements ProjectComponent {
   private FileCreatedByUserListener myListener;
   private final Map<Keymap, List<Pair<String, String>>> myDeletedShortcuts = new HashMap<>();
   private MessageBusConnection myBusConnection;
-  public static final Key<Boolean> IS_TO_UPDATE = Key.create("IS_TO_UPDATE");
+  private static final Key<Boolean> IS_TO_UPDATE = Key.create("IS_TO_UPDATE");
 
   private StudyProjectComponent(@NotNull final Project project) {
     this.project = project;
@@ -110,29 +111,27 @@ public class StudyProjectComponent implements ProjectComponent {
           updateAvailable(course);
         }
 
-        ApplicationManager.getApplication().invokeLater(() -> {
-          ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(project, "Loading Solutions") {
-              @Override
-              public void run(@NotNull ProgressIndicator indicator) {
-                assert myProject != null;
-                TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(myProject);
-                ArrayList<Task> tasksToUpdate = getSolvedTasksAndUpdateStatus(course, selectedTaskFile,
-                                                                              StudyProjectComponent.this.project);
+        ApplicationManager.getApplication().invokeLater(() -> ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(project, "Loading Solutions") {
+          @Override
+          public void run(@NotNull ProgressIndicator indicator) {
+            assert myProject != null;
+            TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(myProject);
+            ArrayList<Task> tasksToUpdate = getSolvedTasksAndUpdateStatus(course, selectedTaskFile, project);
 
-                for (Task task : tasksToUpdate) {
-                  StudySyncCourseAction.updateTaskFilesTexts(myProject, task);
-                }
+            for (Task task : tasksToUpdate) {
+              boolean isSolved = task.getStatus() == StudyStatus.Solved;
+              StudySyncCourseAction.updateTaskSolution(myProject, task, isSolved);
+            }
 
-                connect.disconnect();
-                if (!tasksToUpdate.isEmpty()) {
-                  ApplicationManager.getApplication().invokeLater(() -> {
-                    VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
-                    StudySyncCourseAction.openTask(myProject, course, selectedTaskFile);
-                  });
-                }
-              }
-            });
-        });
+            connect.disconnect();
+            if (!tasksToUpdate.isEmpty()) {
+              ApplicationManager.getApplication().invokeLater(() -> {
+                VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
+                StudySyncCourseAction.openTask(myProject, course, selectedTaskFile);
+              });
+            }
+          }
+        }));
 
         StudyUtils.registerStudyToolWindow(course, project);
         addStepicWidget();
@@ -189,7 +188,7 @@ public class StudyProjectComponent implements ProjectComponent {
     ArrayList<Task> taskToUpdate = new ArrayList<>();
     for (Lesson lesson : course.getLessons()) {
       List<Task> tasks = lesson.getTaskList();
-      int[] ids = tasks.stream().mapToInt(task -> task.getStepId()).toArray();
+      int[] ids = tasks.stream().mapToInt(Task::getStepId).toArray();
       List<StepicWrappers.StepSource> steps = EduStepicConnector.getSteps(ids);
       if (steps != null) {
         String[] progresses = steps.stream().map(step -> step.progress).toArray(String[]::new);
@@ -199,8 +198,8 @@ public class StudyProjectComponent implements ProjectComponent {
           Boolean isSolved = solved[i];
           Task task = tasks.get(i);
           if (isSolved != null) {
-            if (isSolved && task.getStatus() != StudyStatus.Solved) {
-              task.setStatus(StudyStatus.Solved);
+            if (isToUpdate(isSolved, task)) {
+              task.setStatus(isSolved ? StudyStatus.Solved : StudyStatus.Failed);
               if (task.equals(selectedTask)) {
                 disableEditor(project);
               }
@@ -215,6 +214,25 @@ public class StudyProjectComponent implements ProjectComponent {
       }
     }
     return taskToUpdate;
+  }
+
+  private static boolean isToUpdate(@NotNull Boolean isSolved, @NotNull Task task) {
+    if (isSolved && task.getStatus() != StudyStatus.Solved) {
+      return true;
+    }
+    else if (!isSolved) {
+      try {
+        List<StepicWrappers.SolutionFile> solutionFiles = EduStepicConnector.getLastSubmission(String.valueOf(task.getStepId()));
+        if (!solutionFiles.isEmpty()) {
+          return true;
+        }
+      }
+      catch (IOException e) {
+        LOG.warn(e.getMessage());
+      }
+    }
+
+    return false;
   }
 
   private static void disableEditor(Project project) {

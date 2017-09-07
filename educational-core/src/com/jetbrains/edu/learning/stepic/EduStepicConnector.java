@@ -377,11 +377,10 @@ public class EduStepicConnector {
   }
 
   @NotNull
-  public static List<StepicWrappers.SolutionFile> getLastCorrectSubmissionFromStepik(String stepId) throws IOException {
+  public static List<StepicWrappers.SolutionFile> getLastSubmission(String stepId) throws IOException {
     try {
       URI url = new URIBuilder(EduStepicNames.SUBMISSIONS)
         .addParameter("order", "desc")
-        .addParameter("status", "correct")
         .addParameter("page", "1")
         .addParameter("step", stepId).build();
       StepicWrappers.Submission[] submissions = getFromStepik(url.toString(), StepicWrappers.SubmissionsWrapper.class).submissions;

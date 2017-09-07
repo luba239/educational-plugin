@@ -24,7 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 import java.util.List;
 
-import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getLastCorrectSubmissionFromStepik;
+import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getLastSubmission;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags;
 
 public class StudySyncCourseAction extends DumbAwareAction {
@@ -76,13 +76,8 @@ public class StudySyncCourseAction extends DumbAwareAction {
         for (int i = 0; i < tasks.size(); i++) {
           Boolean isSolved = solved[i];
           Task task = tasks.get(i);
-          if (isSolved == null || !isSolved) {
-            task.setStatus(StudyStatus.Unchecked);
-          }
-          else {
-            task.setStatus(StudyStatus.Solved);
-            updateTaskFilesTexts(project, task);
-          }
+          if (isSolved == null) continue;
+          updateTaskSolution(project, task, isSolved);
         }
       }
     }
@@ -107,13 +102,18 @@ public class StudySyncCourseAction extends DumbAwareAction {
     }
   }
 
-  public static void updateTaskFilesTexts(@NotNull Project project, Task task) {
+  public static void updateTaskSolution(@NotNull Project project, Task task, boolean isSolved) {
     if (task instanceof TaskWithSubtasks) {
       return;
     }
 
     try {
-      List<StepicWrappers.SolutionFile> solutionFiles = getLastCorrectSubmissionFromStepik(String.valueOf(task.getStepId()));
+      List<StepicWrappers.SolutionFile> solutionFiles = getLastSubmission(String.valueOf(task.getStepId()));
+      if (solutionFiles.isEmpty()) {
+        task.setStatus(StudyStatus.Unchecked);
+        return;
+      }
+      task.setStatus(isSolved ? StudyStatus.Solved : StudyStatus.Failed);
       for (StepicWrappers.SolutionFile file : solutionFiles) {
         TaskFile taskFile = task.getTaskFile(file.name);
         if (taskFile != null) {
