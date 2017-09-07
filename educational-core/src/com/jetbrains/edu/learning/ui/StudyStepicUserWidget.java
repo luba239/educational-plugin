@@ -1,50 +1,47 @@
 package com.jetbrains.edu.learning.ui;
 
-import com.intellij.ide.BrowserUtil;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.ui.popup.JBPopup;
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.ui.popup.ListPopup;
+import com.intellij.openapi.ui.popup.PopupStep;
+import com.intellij.openapi.ui.popup.util.BaseListPopupStep;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.wm.IconLikeCustomStatusBarWidget;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.ui.ClickListener;
-import com.intellij.ui.HoverHyperlinkLabel;
-import com.intellij.ui.HyperlinkAdapter;
 import com.intellij.ui.awt.RelativePoint;
-import com.intellij.util.ui.JBUI;
 import com.jetbrains.edu.learning.StudySettings;
 import com.jetbrains.edu.learning.StudyUtils;
+import com.jetbrains.edu.learning.actions.StudySyncCourseAction;
 import com.jetbrains.edu.learning.stepic.EduStepicConnector;
-import com.jetbrains.edu.learning.stepic.EduStepicNames;
 import com.jetbrains.edu.learning.stepic.StepicUser;
 import icons.EducationalCoreIcons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import javax.swing.event.HyperlinkEvent;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
+import java.util.ArrayList;
 
 public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
   public static final String ID = "StepicUser";
   private JLabel myComponent;
 
-  public StudyStepicUserWidget() {
-    StepicUser user = StudySettings.getInstance().getUser();
-    Icon icon = getWidgetIcon(user);
+  public StudyStepicUserWidget(@NotNull Project project) {
+    Icon icon = getWidgetIcon(StudySettings.getInstance().getUser());
     myComponent = new JLabel(icon);
 
     new ClickListener() {
       @Override
       public boolean onClick(@NotNull MouseEvent e, int clickCount) {
+        StepicUser user = StudySettings.getInstance().getUser();
+        ListPopup popup = createPopup(user, project);
+        Dimension preferredSize = popup.getContent().getPreferredSize();
         Point point = new Point(0, 0);
-        StepicUserComponent component = new StepicUserComponent(StudySettings.getInstance().getUser());
-        final Dimension dimension = component.getPreferredSize();
-        point = new Point(point.x - dimension.width, point.y - dimension.height);
-        component.showComponent(new RelativePoint(e.getComponent(), point));
+        point = new Point(point.x - preferredSize.width, point.y - preferredSize.height);
+        popup.show(new RelativePoint(myComponent, point));
+
         return true;
       }
     }.installOn(myComponent);
@@ -88,134 +85,39 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
     return icon;
   }
 
+  private ListPopup createPopup(@Nullable StepicUser user, @NotNull Project project) {
+    String loginText = "Log in to Stepik";
+    String logOutText = "Log out";
+    String syncCourseStep = "Synchronize course";
+    String userActionStep = user == null ? loginText : logOutText;
+
+    ArrayList<String> steps = new ArrayList<>();
+    if (user != null) {
+      steps.add(syncCourseStep);
+    }
+    steps.add(userActionStep);
+
+    BaseListPopupStep stepikStep = new BaseListPopupStep<String>(null, steps) {
+      @Override
+      public PopupStep onChosen(String selectedValue, boolean finalChoice) {
+        return doFinalStep(() -> {
+          if (syncCourseStep.equals(selectedValue)) {
+            StudySyncCourseAction.doUpdate(project);
+          } else {
+            if (loginText.equals(selectedValue)) {
+              EduStepicConnector.doAuthorize(StudyUtils::showOAuthDialog);
+            } else if (logOutText.equals(selectedValue)) {
+              StudySettings.getInstance().setUser(null);
+            }
+          }
+        });
+      }
+    };
+    return JBPopupFactory.getInstance().createListPopup(stepikStep);
+  }
+
   @Override
   public JComponent getComponent() {
     return myComponent;
-  }
-
-
-  private class StepicUserComponent extends JPanel {
-    private static final int myLeftMargin = 10;
-    private static final int myTopMargin = 6;
-    private static final int myActionLabelIndent = 260;
-    private JBPopup myPopup;
-
-    StepicUserComponent(@Nullable StepicUser user) {
-      super();
-      BorderLayout layout = new BorderLayout();
-      layout.setVgap(10);
-      setLayout(layout);
-
-      if (user == null) {
-        JPanel statusPanel = createTextPanel("You're not logged in", null);
-        JPanel actionPanel = createActionPanel("Log in to Stepik", createAuthorizeUserListener());
-        add(constructPanel(statusPanel, actionPanel), BorderLayout.PAGE_START);
-      }
-      else {
-        String firstName = user.getFirstName();
-        String lastName = user.getLastName();
-        String statusText;
-        if (firstName == null || lastName == null || firstName.isEmpty() || lastName.isEmpty()) {
-          statusText = "You're logged in";
-        }
-        else {
-          statusText = "<html>You're logged in as <a href=\"\">" + firstName + " " + lastName + "</a></html>";
-        }
-        JPanel statusPanel = createTextPanel(statusText, createOpenProfileListener(user.getId()));
-        JPanel actionPanel = createActionPanel("Log out", createLogoutListener());
-        add(constructPanel(statusPanel, actionPanel), BorderLayout.PAGE_START);
-      }
-    }
-
-    @NotNull
-    private HyperlinkAdapter createAuthorizeUserListener() {
-      return new HyperlinkAdapter() {
-        @Override
-        protected void hyperlinkActivated(HyperlinkEvent e) {
-          EduStepicConnector.doAuthorize(StudyUtils::showOAuthDialog);
-          myPopup.cancel();
-        }
-      };
-    }
-
-    @NotNull
-    private HyperlinkAdapter createLogoutListener() {
-      return new HyperlinkAdapter() {
-        @Override
-        protected void hyperlinkActivated(HyperlinkEvent e) {
-          StudySettings.getInstance().setUser(null);
-          myPopup.cancel();
-        }
-      };
-    }
-
-    private MouseAdapter createOpenProfileListener(int userId) {
-      return new MouseAdapter() {
-        @Override
-        public void mouseClicked(MouseEvent e) {
-          if (e.getClickCount() == 1) {
-            BrowserUtil.browse(EduStepicNames.STEPIC_URL + EduStepicNames.USERS + userId);
-            myPopup.cancel();
-          }
-        }
-      };
-    }
-
-    private JPanel constructPanel(JPanel ... panels) {
-      JPanel mainPanel = new JPanel();
-      BoxLayout layout = new BoxLayout(mainPanel, BoxLayout.PAGE_AXIS);
-      mainPanel.setLayout(layout);
-      for (JPanel panel : panels) {
-        mainPanel.add(panel);
-        mainPanel.add(Box.createVerticalStrut(6));
-      }
-
-      return mainPanel;
-    }
-
-    @NotNull
-    private JPanel createTextPanel(@NotNull String statusText, @Nullable MouseListener listener) {
-      JPanel statusPanel = new JPanel(new BorderLayout());
-      JLabel statusLabel = new JLabel(statusText);
-      statusLabel.addMouseListener(listener);
-      statusPanel.add(Box.createVerticalStrut(myTopMargin), BorderLayout.PAGE_START);
-      statusPanel.add(Box.createHorizontalStrut(myLeftMargin), BorderLayout.WEST);
-      statusPanel.add(statusLabel, BorderLayout.CENTER);
-      return statusPanel;
-    }
-
-    @NotNull
-    private JPanel createActionPanel(@NotNull String actionLabelText, @NotNull HyperlinkAdapter listener) {
-      JPanel actionPanel = new JPanel(new BorderLayout());
-      HoverHyperlinkLabel actionLabel = new HoverHyperlinkLabel(actionLabelText);
-      actionLabel.addHyperlinkListener(listener);
-      actionPanel.add(Box.createHorizontalStrut(myActionLabelIndent), BorderLayout.LINE_START);
-      actionPanel.add(actionLabel, BorderLayout.CENTER);
-      actionPanel.add(Box.createHorizontalStrut(myLeftMargin), BorderLayout.EAST);
-      return actionPanel;
-    }
-
-    @Override
-    public Dimension getPreferredSize() {
-      final Dimension preferredSize = super.getPreferredSize();
-      final int width = JBUI.scale(300);
-      if (preferredSize.width < width){
-        preferredSize.width = width;
-      }
-      return preferredSize;
-    }
-
-    void showComponent(RelativePoint point) {
-      myPopup = JBPopupFactory.getInstance().createComponentPopupBuilder(this, this)
-        .setRequestFocus(true)
-        .setCancelOnOtherWindowOpen(true)
-        .setCancelOnClickOutside(true)
-        .setShowBorder(true)
-        .createPopup();
-
-      Disposer.register(ApplicationManager.getApplication(), () -> Disposer.dispose(myPopup));
-
-      myPopup.show(point);
-    }
   }
 }

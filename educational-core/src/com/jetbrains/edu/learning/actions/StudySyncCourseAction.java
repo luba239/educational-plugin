@@ -62,12 +62,12 @@ public class StudySyncCourseAction extends DumbAwareAction {
     }, "Synchronizing Course", true, project);
   }
 
-  public static boolean updateCourse(@NotNull Project project, @NotNull Course course) {
+  private static boolean updateCourse(@NotNull Project project, @NotNull Course course) {
     TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(project);
 
     for (Lesson lesson : course.getLessons()) {
       List<Task> tasks = lesson.getTaskList();
-      int[] ids = tasks.stream().mapToInt(task -> task.getStepId()).toArray();
+      int[] ids = tasks.stream().mapToInt(Task::getStepId).toArray();
       List<StepicWrappers.StepSource> steps = EduStepicConnector.getSteps(ids);
       if (steps != null) {
         String[] progesses = steps.stream().map(step -> step.progress).toArray(String[]::new);
