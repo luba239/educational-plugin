@@ -10,24 +10,18 @@ import com.intellij.openapi.actionSystem.ex.AnActionListener;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.components.ProjectComponent;
 import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.colors.EditorColorsListener;
 import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.colors.EditorColorsScheme;
-import com.intellij.openapi.editor.impl.EditorImpl;
-import com.intellij.openapi.fileEditor.FileEditorManager;
-import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.fileEditor.ex.FileEditorManagerEx;
 import com.intellij.openapi.keymap.Keymap;
 import com.intellij.openapi.keymap.ex.KeymapManagerEx;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleManager;
-import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.StartupManager;
-import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.vfs.VirtualFile;
@@ -38,36 +32,29 @@ import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
 import com.intellij.openapi.wm.WindowManager;
-import com.intellij.ui.components.JBLabel;
-import com.intellij.ui.components.panels.NonOpaquePanel;
 import com.intellij.util.containers.hash.HashMap;
 import com.intellij.util.messages.MessageBusConnection;
-import com.intellij.util.ui.JBUI;
-import com.intellij.util.ui.UIUtil;
 import com.jetbrains.edu.learning.actions.StudyActionWithShortcut;
 import com.jetbrains.edu.learning.actions.StudyNextWindowAction;
 import com.jetbrains.edu.learning.actions.StudyPrevWindowAction;
 import com.jetbrains.edu.learning.actions.StudySyncCourseAction;
 import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.core.EduUtils;
-import com.jetbrains.edu.learning.courseFormat.*;
+import com.jetbrains.edu.learning.courseFormat.Course;
+import com.jetbrains.edu.learning.courseFormat.Lesson;
+import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
-import com.jetbrains.edu.learning.editor.StudyEditor;
 import com.jetbrains.edu.learning.editor.StudyEditorFactoryListener;
 import com.jetbrains.edu.learning.statistics.EduUsagesCollector;
 import com.jetbrains.edu.learning.stepic.EduStepicConnector;
-import com.jetbrains.edu.learning.stepic.StepicWrappers;
 import com.jetbrains.edu.learning.ui.StudyStepicUserWidget;
 import com.jetbrains.edu.learning.ui.StudyToolWindow;
 import com.jetbrains.edu.learning.ui.StudyToolWindowFactory;
 import javafx.application.Platform;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
-import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -83,7 +70,6 @@ public class StudyProjectComponent implements ProjectComponent {
   private FileCreatedByUserListener myListener;
   private final Map<Keymap, List<Pair<String, String>>> myDeletedShortcuts = new HashMap<>();
   private MessageBusConnection myBusConnection;
-  private static final Key<Boolean> IS_TO_UPDATE = Key.create("IS_TO_UPDATE");
 
   private StudyProjectComponent(@NotNull final Project project) {
     myProject = project;
@@ -95,9 +81,6 @@ public class StudyProjectComponent implements ProjectComponent {
     if (StudyUtils.hasJavaFx()) {
       Platform.setImplicitExit(false);
     }
-
-    MessageBusConnection connect = ApplicationManager.getApplication().getMessageBus().connect();
-    connect.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, taskUpdatingListener());
 
     StartupManager.getInstance(myProject).runWhenProjectIsInitialized(
       () -> {
@@ -111,27 +94,7 @@ public class StudyProjectComponent implements ProjectComponent {
           updateAvailable(course);
         }
 
-        ApplicationManager.getApplication().invokeLater(() -> ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(myProject, "Loading Solutions") {
-          @Override
-          public void run(@NotNull ProgressIndicator indicator) {
-            assert myProject != null;
-            ArrayList<Task> tasksToUpdate = getSolvedTasksAndUpdateStatus(course, StudyUtils.getSelectedTaskFile(myProject), StudyProjectComponent.this.myProject);
-
-            for (Task task : tasksToUpdate) {
-              boolean isSolved = task.getStatus() == StudyStatus.Solved;
-              StudySyncCourseAction.updateTaskSolution(myProject, task, isSolved);
-            }
-
-            connect.disconnect();
-            if (!tasksToUpdate.isEmpty()) {
-              TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(myProject);
-              ApplicationManager.getApplication().invokeLater(() -> {
-                VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
-                StudySyncCourseAction.openTask(myProject, selectedTaskFile);
-              });
-            }
-          }
-        }));
+        StudySyncCourseAction.updateCourse(myProject, course);
 
         StudyUtils.registerStudyToolWindow(course, myProject);
         addStepicWidget();
@@ -157,104 +120,6 @@ public class StudyProjectComponent implements ProjectComponent {
         }
       }
     });
-  }
-
-  @NotNull
-  private FileEditorManagerListener taskUpdatingListener() {
-    return new FileEditorManagerListener() {
-      @Override
-      public void fileOpened(@NotNull FileEditorManager source, @NotNull VirtualFile file) {
-        StudyEditor studyEditor = StudyUtils.getSelectedStudyEditor(myProject);
-        TaskFile taskFile = StudyUtils.getTaskFile(myProject, file);
-        if (studyEditor != null && taskFile != null) {
-          Task task = taskFile.getTask();
-          VirtualFile taskDir = task.getTaskDir(myProject);
-          if (taskDir != null) {
-            Boolean toUpdate = taskDir.getUserData(IS_TO_UPDATE);
-            if (toUpdate != null && toUpdate) {
-              disableEditor(StudyProjectComponent.this.myProject);
-            }
-          }
-        }
-      }
-    };
-  }
-
-  private static ArrayList<Task> getSolvedTasksAndUpdateStatus(@NotNull Course course, @Nullable TaskFile selectedTaskFile, @NotNull Project project) {
-    Task selectedTask = null;
-    if (selectedTaskFile != null) {
-      selectedTask = selectedTaskFile.getTask();
-    }
-    ArrayList<Task> taskToUpdate = new ArrayList<>();
-    for (Lesson lesson : course.getLessons()) {
-      List<Task> tasks = lesson.getTaskList();
-      int[] ids = tasks.stream().mapToInt(Task::getStepId).toArray();
-      List<StepicWrappers.StepSource> steps = EduStepicConnector.getSteps(ids);
-      if (steps != null) {
-        String[] progresses = steps.stream().map(step -> step.progress).toArray(String[]::new);
-        Boolean[] solved = EduStepicConnector.isTasksSolved(progresses);
-        if (solved == null) return taskToUpdate;
-        for (int i = 0; i < tasks.size(); i++) {
-          Boolean isSolved = solved[i];
-          Task task = tasks.get(i);
-          if (isSolved != null) {
-            if (isToUpdate(isSolved, task)) {
-              task.setStatus(isSolved ? StudyStatus.Solved : StudyStatus.Failed);
-              if (task.equals(selectedTask)) {
-                disableEditor(project);
-              }
-              VirtualFile taskDir = task.getTaskDir(project);
-              if (taskDir != null) {
-                taskDir.putUserData(IS_TO_UPDATE, true);
-              }
-              taskToUpdate.add(tasks.get(i));
-            }
-          }
-        }
-      }
-    }
-    return taskToUpdate;
-  }
-
-  private static boolean isToUpdate(@NotNull Boolean isSolved, @NotNull Task task) {
-    if (isSolved && task.getStatus() != StudyStatus.Solved) {
-      return true;
-    }
-    else if (!isSolved) {
-      try {
-        List<StepicWrappers.SolutionFile> solutionFiles = EduStepicConnector.getLastSubmission(String.valueOf(task.getStepId()));
-        if (!solutionFiles.isEmpty()) {
-          return true;
-        }
-      }
-      catch (IOException e) {
-        LOG.warn(e.getMessage());
-      }
-    }
-
-    return false;
-  }
-
-  private static void disableEditor(Project project) {
-    StudyEditor studyEditor = StudyUtils.getSelectedStudyEditor(project);
-
-    if (studyEditor != null) {
-      Editor editor = studyEditor.getEditor();
-      editor.setHeaderComponent(createNotificationPanel());
-      ((EditorImpl)editor).setViewer(true);
-      ((EditorImpl)editor).setCaretEnabled(false);
-      ((EditorImpl)editor).setShowPlaceholderWhenFocused(false);
-    }
-  }
-
-  @NotNull
-  private static JPanel createNotificationPanel() {
-    JPanel panel = new NonOpaquePanel(new BorderLayout());
-    JBLabel solution = new JBLabel("Loading solution");
-    panel.setBackground(UIUtil.getToolTipBackground());
-    panel.add(solution, BorderLayout.CENTER);
-    panel.setBorder(JBUI.Borders.empty(10, 10));
-    return panel;
   }
 
   private void addStepicWidget() {
