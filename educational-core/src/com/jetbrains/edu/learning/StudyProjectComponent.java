@@ -115,8 +115,7 @@ public class StudyProjectComponent implements ProjectComponent {
           @Override
           public void run(@NotNull ProgressIndicator indicator) {
             assert myProject != null;
-            TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(myProject);
-            ArrayList<Task> tasksToUpdate = getSolvedTasksAndUpdateStatus(course, selectedTaskFile, project);
+            ArrayList<Task> tasksToUpdate = getSolvedTasksAndUpdateStatus(course, StudyUtils.getSelectedTaskFile(myProject), project);
 
             for (Task task : tasksToUpdate) {
               boolean isSolved = task.getStatus() == StudyStatus.Solved;
@@ -125,9 +124,10 @@ public class StudyProjectComponent implements ProjectComponent {
 
             connect.disconnect();
             if (!tasksToUpdate.isEmpty()) {
+              TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(myProject);
               ApplicationManager.getApplication().invokeLater(() -> {
                 VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
-                StudySyncCourseAction.openTask(myProject, course, selectedTaskFile);
+                StudySyncCourseAction.openTask(myProject, selectedTaskFile);
               });
             }
           }

@@ -20,6 +20,7 @@ import com.jetbrains.edu.learning.stepic.StepicWrappers;
 import com.jetbrains.edu.learning.ui.StudyStepicUserWidget;
 import icons.EducationalCoreIcons;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.List;
@@ -84,21 +85,18 @@ public class StudySyncCourseAction extends DumbAwareAction {
 
     ApplicationManager.getApplication().invokeLater(() -> {
       VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
-      openTask(project, course, selectedTaskFile);
+      openTask(project, selectedTaskFile);
     });
 
     return true;
   }
 
-  public static void openTask(@NotNull Project project, @NotNull Course course, TaskFile selectedTaskFile) {
+  public static void openTask(@NotNull Project project, @Nullable TaskFile selectedTaskFile) {
     if (selectedTaskFile != null) {
       Lesson selectedLesson = selectedTaskFile.getTask().getLesson();
       int index = selectedTaskFile.getTask().getIndex();
       Task task = selectedLesson.getTaskList().get(index - 1);
       StudyNavigator.navigateToTask(project, task);
-    }
-    else {
-      StudyUtils.openFirstTask(course, project);
     }
   }
 
