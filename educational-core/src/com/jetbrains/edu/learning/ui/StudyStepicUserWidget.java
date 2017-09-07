@@ -1,9 +1,7 @@
 package com.jetbrains.edu.learning.ui;
 
 import com.intellij.ide.BrowserUtil;
-import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.intellij.openapi.util.Disposer;
@@ -15,10 +13,7 @@ import com.intellij.ui.HyperlinkAdapter;
 import com.intellij.ui.awt.RelativePoint;
 import com.intellij.util.ui.JBUI;
 import com.jetbrains.edu.learning.StudySettings;
-import com.jetbrains.edu.learning.StudyTaskManager;
 import com.jetbrains.edu.learning.StudyUtils;
-import com.jetbrains.edu.learning.actions.StudySyncCourseAction;
-import com.jetbrains.edu.learning.courseFormat.Course;
 import com.jetbrains.edu.learning.stepic.EduStepicConnector;
 import com.jetbrains.edu.learning.stepic.EduStepicNames;
 import com.jetbrains.edu.learning.stepic.StepicUser;
@@ -36,24 +31,17 @@ import java.awt.event.MouseListener;
 public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
   public static final String ID = "StepicUser";
   private JLabel myComponent;
-  private Project myProject;
-  private boolean myNewSolvedTasks;
 
-
-  public StudyStepicUserWidget(Project project) {
-    myProject = project;
+  public StudyStepicUserWidget() {
     StepicUser user = StudySettings.getInstance().getUser();
-    Course course = StudyTaskManager.getInstance(myProject).getCourse();
-    assert course != null;
-    myNewSolvedTasks = EduStepicConnector.hasNewSolvedTasks(course);
-    Icon icon = getWidgetIcon(user, myNewSolvedTasks);
+    Icon icon = getWidgetIcon(user);
     myComponent = new JLabel(icon);
 
     new ClickListener() {
       @Override
       public boolean onClick(@NotNull MouseEvent e, int clickCount) {
         Point point = new Point(0, 0);
-        StepicUserComponent component = new StepicUserComponent(StudySettings.getInstance().getUser(), myNewSolvedTasks);
+        StepicUserComponent component = new StepicUserComponent(StudySettings.getInstance().getUser());
         final Dimension dimension = component.getPreferredSize();
         point = new Point(point.x - dimension.width, point.y - dimension.height);
         component.showComponent(new RelativePoint(e.getComponent(), point));
@@ -85,17 +73,14 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
 
   public void update() {
     StepicUser user = StudySettings.getInstance().getUser();
-    Course course = StudyTaskManager.getInstance(myProject).getCourse();
-    assert course != null;
-    myNewSolvedTasks = EduStepicConnector.hasNewSolvedTasks(course);
-    Icon icon = getWidgetIcon(user, myNewSolvedTasks);
+    Icon icon = getWidgetIcon(user);
     myComponent.setIcon(icon);
   }
 
-  private static Icon getWidgetIcon(StepicUser user, boolean newSolvedTasks) {
+  private static Icon getWidgetIcon(StepicUser user) {
     Icon icon;
     if (user != null) {
-      icon = newSolvedTasks ? EducationalCoreIcons.StepikRefresh : EducationalCoreIcons.Stepik;
+      icon = EducationalCoreIcons.Stepik;
     }
     else {
       icon = EducationalCoreIcons.StepikOff;
@@ -115,7 +100,7 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
     private static final int myActionLabelIndent = 260;
     private JBPopup myPopup;
 
-    public StepicUserComponent(@Nullable StepicUser user, boolean newSolvedTasks) {
+    StepicUserComponent(@Nullable StepicUser user) {
       super();
       BorderLayout layout = new BorderLayout();
       layout.setVgap(10);
@@ -136,18 +121,9 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
         else {
           statusText = "<html>You're logged in as <a href=\"\">" + firstName + " " + lastName + "</a></html>";
         }
-        if (myNewSolvedTasks) {
-          String loadSolutionText = "<html> <a href=\"\">Load</a> solutions from Stepik</html>";
-          JPanel statusPanel = createTextPanel(statusText, createOpenProfileListener(user.getId()));
-          JPanel loadSolutionsPanel = createTextPanel(loadSolutionText, createLoadSolutionsListener());
-          JPanel actionPanel = createActionPanel("Log out", createLogoutListener());
-          add(constructPanel(statusPanel, loadSolutionsPanel, actionPanel), BorderLayout.PAGE_START);
-        }
-        else {
-          JPanel statusPanel = createTextPanel("You're not logged in", null);
-          JPanel actionPanel = createActionPanel("Log in to Stepik", createAuthorizeUserListener());
-          add(constructPanel(statusPanel, actionPanel), BorderLayout.PAGE_START);
-        }
+        JPanel statusPanel = createTextPanel(statusText, createOpenProfileListener(user.getId()));
+        JPanel actionPanel = createActionPanel("Log out", createLogoutListener());
+        add(constructPanel(statusPanel, actionPanel), BorderLayout.PAGE_START);
       }
     }
 
@@ -156,7 +132,7 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
       return new HyperlinkAdapter() {
         @Override
         protected void hyperlinkActivated(HyperlinkEvent e) {
-          EduStepicConnector.doAuthorize(() -> StudyUtils.showOAuthDialog());
+          EduStepicConnector.doAuthorize(StudyUtils::showOAuthDialog);
           myPopup.cancel();
         }
       };
@@ -179,21 +155,6 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
         public void mouseClicked(MouseEvent e) {
           if (e.getClickCount() == 1) {
             BrowserUtil.browse(EduStepicNames.STEPIC_URL + EduStepicNames.USERS + userId);
-            myPopup.cancel();
-          }
-        }
-      };
-    }
-
-    private MouseAdapter createLoadSolutionsListener() {
-      return new MouseAdapter() {
-        @Override
-        public void mouseClicked(MouseEvent e) {
-          if (e.getClickCount() == 1) {
-            if (StudySyncCourseAction.doUpdate(myProject)) {
-              myNewSolvedTasks = false;
-              myComponent.setIcon(getWidgetIcon(StudySettings.getInstance().getUser(), myNewSolvedTasks));
-            }
             myPopup.cancel();
           }
         }
@@ -244,7 +205,7 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
       return preferredSize;
     }
 
-    public void showComponent(RelativePoint point) {
+    void showComponent(RelativePoint point) {
       myPopup = JBPopupFactory.getInstance().createComponentPopupBuilder(this, this)
         .setRequestFocus(true)
         .setCancelOnOtherWindowOpen(true)
@@ -252,12 +213,7 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
         .setShowBorder(true)
         .createPopup();
 
-      Disposer.register(ApplicationManager.getApplication(), new Disposable() {
-        @Override
-        public void dispose() {
-          Disposer.dispose(myPopup);
-        }
-      });
+      Disposer.register(ApplicationManager.getApplication(), () -> Disposer.dispose(myPopup));
 
       myPopup.show(point);
     }

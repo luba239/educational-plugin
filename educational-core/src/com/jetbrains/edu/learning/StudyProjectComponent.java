@@ -268,7 +268,7 @@ public class StudyProjectComponent implements ProjectComponent {
     if (widget != null) {
       statusBar.removeWidget(StudyStepicUserWidget.ID);
     }
-    statusBar.addWidget(new StudyStepicUserWidget(project), "before Position");
+    statusBar.addWidget(new StudyStepicUserWidget(), "before Position");
   }
 
   private void selectStep(@NotNull Course course) {
