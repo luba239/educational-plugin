@@ -54,11 +54,11 @@ import java.util.concurrent.TimeUnit;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getStep;
 
 public class EduAdaptiveStepicConnector {
-  public static final String PYCHARM_COMMENT = " Posted from PyCharm Edu\n";
-  public static final int NEXT_RECOMMENDATION_REACTION = 2;
-  public static final int TOO_HARD_RECOMMENDATION_REACTION = 0;
-  public static final int TOO_BORING_RECOMMENDATION_REACTION = -1;
-  public static final String LOADING_NEXT_RECOMMENDATION = "Loading Next Recommendation";
+  private static final String PYCHARM_COMMENT = " Posted from PyCharm Edu\n";
+  static final int NEXT_RECOMMENDATION_REACTION = 2;
+  static final int TOO_HARD_RECOMMENDATION_REACTION = 0;
+  static final int TOO_BORING_RECOMMENDATION_REACTION = -1;
+  static final String LOADING_NEXT_RECOMMENDATION = "Loading Next Recommendation";
   private static final Logger LOG = Logger.getInstance(EduAdaptiveStepicConnector.class);
   private static final int CONNECTION_TIMEOUT = 60 * 1000;
 
@@ -197,7 +197,7 @@ public class EduAdaptiveStepicConnector {
     request.setConfig(requestConfig);
   }
 
-  public static boolean postRecommendationReaction(@NotNull String lessonId, @NotNull String user, int reaction) {
+  private static boolean postRecommendationReaction(@NotNull String lessonId, @NotNull String user, int reaction) {
     final HttpPost post = new HttpPost(EduStepicNames.STEPIC_API_URL + EduStepicNames.RECOMMENDATION_REACTIONS_URL);
     final String json = new Gson()
       .toJson(new StepicWrappers.RecommendationReactionWrapper(new StepicWrappers.RecommendationReaction(reaction, user, lessonId)));
@@ -225,10 +225,10 @@ public class EduAdaptiveStepicConnector {
     }
   }
 
-  public static void addNextRecommendedTask(@NotNull Project project,
-                                            @NotNull Lesson lesson,
-                                            @NotNull ProgressIndicator indicator,
-                                            int reactionToPost) {
+  static void addNextRecommendedTask(@NotNull Project project,
+                                     @NotNull Lesson lesson,
+                                     @NotNull ProgressIndicator indicator,
+                                     int reactionToPost) {
     final Course course = StudyTaskManager.getInstance(project).getCourse();
     if (!(course instanceof RemoteCourse)) {
       LOG.warn("Course is in incorrect state");
@@ -462,7 +462,7 @@ public class EduAdaptiveStepicConnector {
   }
 
   @Nullable
-  public static StepicWrappers.ResultSubmissionWrapper postResultsForCheck(@NotNull final CloseableHttpClient client,
+  private static StepicWrappers.ResultSubmissionWrapper postResultsForCheck(@NotNull final CloseableHttpClient client,
                                                                             @NotNull StepicWrappers.SubmissionToPostWrapper submissionToPostWrapper) {
     final CloseableHttpResponse response;
     try {
@@ -592,16 +592,16 @@ public class EduAdaptiveStepicConnector {
     private final Language myLanguage;
     private StepicWrappers.Step myStep;
     private final Map<String, Computable<Task>> taskTypes = ImmutableMap.of(
-      "code", () -> codeTask(),
-      "choice", () -> choiceTask(),
-      "text", () -> theoryTask(),
-      "task", () -> pycharmTask()
+      "code", this::codeTask,
+      "choice", this::choiceTask,
+      "text", this::theoryTask,
+      "task", this::pycharmTask
     );
 
-    public StepikTaskBuilder(@NotNull RemoteCourse course,
-                             @NotNull String name,
-                             @NotNull StepicWrappers.StepSource step,
-                             int stepId, int userId) {
+    StepikTaskBuilder(@NotNull RemoteCourse course,
+                      @NotNull String name,
+                      @NotNull StepicWrappers.StepSource step,
+                      int stepId, int userId) {
       myName = name;
       myStep = step.block;
       myStepId = stepId;
@@ -610,11 +610,11 @@ public class EduAdaptiveStepicConnector {
     }
 
     @Nullable
-    public Task createTask(String type) {
+    Task createTask(String type) {
       return taskTypes.get(type).compute();
     }
 
-    public boolean isSupported(String type) {
+    boolean isSupported(String type) {
       return taskTypes.containsKey(type);
     }
 
