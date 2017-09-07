@@ -50,7 +50,6 @@ public class StudyResetCourseAction extends DumbAwareAction {
   }
 
   private static void removeAllLessons(Project project, Course course) {
-    course.setLessons(new ArrayList<>());
     ApplicationManager.getApplication().runWriteAction(() -> {
       for (Lesson lesson : course.getLessons()) {
         final String lessonDirName = EduNames.LESSON + String.valueOf(lesson.getIndex());
@@ -65,6 +64,7 @@ public class StudyResetCourseAction extends DumbAwareAction {
         }
       }
     });
+    course.setLessons(new ArrayList<>());
   }
 
   @Override
