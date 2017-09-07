@@ -145,13 +145,6 @@ public class StudyProjectComponent implements ProjectComponent {
             registerShortcuts();
             EduUsagesCollector.projectTypeOpened(course.isAdaptive() ? EduNames.ADAPTIVE : EduNames.STUDY);
           }));
-
-        if (course instanceof RemoteCourse) {
-          boolean hasNewSolvedTasks = EduStepicConnector.hasNewSolvedTasks(course);
-          if (hasNewSolvedTasks) {
-            showSyncCourseNotification();
-          }
-        }
       }
     );
 
@@ -244,22 +237,6 @@ public class StudyProjectComponent implements ProjectComponent {
     panel.add(solution, BorderLayout.CENTER);
     panel.setBorder(JBUI.Borders.empty(10, 10));
     return panel;
-  }
-
-  private void showSyncCourseNotification() {
-    Notification notification = new Notification("Sync.Course", null, null, null,
-                                           "Looks like you solved some tasks since last time", NotificationType.INFORMATION , null);
-    notification.setImportant(true);
-    notification.addAction(new AnAction("Load solutions") {
-
-
-      @Override
-      public void actionPerformed(AnActionEvent e) {
-        new StudySyncCourseAction().actionPerformed(e);
-        notification.expire();
-      }
-    });
-    notification.notify(project);
   }
 
   private void addStepicWidget() {
