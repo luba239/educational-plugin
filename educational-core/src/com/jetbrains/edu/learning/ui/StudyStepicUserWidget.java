@@ -74,19 +74,12 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
     myComponent.setIcon(icon);
   }
 
-  private static Icon getWidgetIcon(StepicUser user) {
-    Icon icon;
-    if (user != null) {
-      icon = EducationalCoreIcons.Stepik;
-    }
-    else {
-      icon = EducationalCoreIcons.StepikOff;
-    }
-    return icon;
+  private static Icon getWidgetIcon(@Nullable StepicUser user) {
+    return user == null ? EducationalCoreIcons.StepikOff : EducationalCoreIcons.Stepik;
   }
 
   private ListPopup createPopup(@Nullable StepicUser user, @NotNull Project project) {
-    String loginText = "Log in to Stepik";
+    String loginText = "Log in";
     String logOutText = "Log out";
     String syncCourseStep = "Synchronize course";
     String userActionStep = user == null ? loginText : logOutText;
@@ -106,7 +99,8 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
           } else {
             if (loginText.equals(selectedValue)) {
               EduStepicConnector.doAuthorize(StudyUtils::showOAuthDialog);
-            } else if (logOutText.equals(selectedValue)) {
+            }
+            else if (logOutText.equals(selectedValue)) {
               StudySettings.getInstance().setUser(null);
             }
           }
