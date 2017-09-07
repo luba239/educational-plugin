@@ -322,7 +322,7 @@ public class EduAdaptiveStepicConnector {
   private static void updateProjectFiles(@NotNull Project project,
                                          @NotNull Task task,
                                          @NotNull String lessonName,
-                                         Language language) {
+                                         @NotNull Language language) {
     final VirtualFile lessonDir = project.getBaseDir().findChild(lessonName);
     if (lessonDir == null) {
       return;
