@@ -136,7 +136,7 @@ public class EduStepicConnector {
     return null;
   }
 
-  public static StepicWrappers.CoursesContainer getCoursesFromStepik(@Nullable StepicUser user, URI url) throws IOException {
+  private static StepicWrappers.CoursesContainer getCoursesFromStepik(@Nullable StepicUser user, URI url) throws IOException {
     final StepicWrappers.CoursesContainer coursesContainer;
     if (user != null) {
       coursesContainer = EduStepicAuthorizedClient.getFromStepic(url.toString(), StepicWrappers.CoursesContainer.class, user);
@@ -182,7 +182,7 @@ public class EduStepicConnector {
     }
   }
 
-  static void addAvailableCourses(List<Course> result, StepicWrappers.CoursesContainer coursesContainer) throws IOException {
+  private static void addAvailableCourses(List<Course> result, StepicWrappers.CoursesContainer coursesContainer) throws IOException {
     final List<RemoteCourse> courses = coursesContainer.courses;
     for (RemoteCourse info : courses) {
       if (!info.isAdaptive() && StringUtil.isEmptyOrSpaces(info.getType())) continue;
@@ -213,7 +213,7 @@ public class EduStepicConnector {
     info.setLanguage(language);
   }
 
-  static boolean canBeOpened(RemoteCourse courseInfo) {
+  private static boolean canBeOpened(RemoteCourse courseInfo) {
     final ArrayList<String> supportedLanguages = new ArrayList<>();
     final LanguageExtensionPoint[] extensions = Extensions.getExtensions(EduPluginConfigurator.EP_NAME, null);
     for (LanguageExtensionPoint extension : extensions) {
@@ -313,7 +313,7 @@ public class EduStepicConnector {
   }
 
   @Nullable
-  public static Task createTask(int stepicId) throws IOException {
+  static Task createTask(int stepicId) throws IOException {
     final StepicWrappers.StepSource step = getStep(stepicId);
     final StepicWrappers.Step block = step.block;
     if (!block.name.startsWith(PYCHARM_PREFIX)) {
@@ -417,7 +417,7 @@ public class EduStepicConnector {
     return task;
   }
 
-  public static StepicWrappers.StepSource getStep(int step) throws IOException {
+  static StepicWrappers.StepSource getStep(int step) throws IOException {
     return getFromStepik(EduStepicNames.STEPS + String.valueOf(step),
                          StepicWrappers.StepContainer.class).steps.get(0);
   }
@@ -431,36 +431,11 @@ public class EduStepicConnector {
       String url = builder.build().toString();
       return getFromStepik(url, StepicWrappers.StepContainer.class).steps;
     }
-    catch (IOException e) {
-      LOG.warn(e.getMessage());
-    }
-    catch (URISyntaxException e) {
+    catch (IOException | URISyntaxException e) {
       LOG.warn(e.getMessage());
     }
 
     return null;
-  }
-
-  public static boolean hasNewSolvedTasks(@NotNull Course course) {
-    for (Lesson lesson : course.getLessons()) {
-      List<Task> tasks = lesson.getTaskList();
-      int[] ids = tasks.stream().mapToInt(task -> task.getStepId()).toArray();
-      List<StepicWrappers.StepSource> steps = getSteps(ids);
-      if (steps != null) {
-        String[] progesses = steps.stream().map(step -> step.progress).toArray(String[]::new);
-        Boolean[] solved = isTasksSolved(progesses);
-        if (solved == null) return false;
-        for (int i = 0; i < tasks.size(); i++) {
-          Boolean isSolved = solved[i];
-          Task task = tasks.get(i);
-          if (isSolved != null && isSolved && task.getStatus() != StudyStatus.Solved) {
-            return true;
-          }
-        }
-      }
-    }
-
-    return false;
   }
 
   @Nullable
@@ -474,10 +449,7 @@ public class EduStepicConnector {
       List<StepicWrappers.ProgressContainer.Progress> progressList = getFromStepik(link, StepicWrappers.ProgressContainer.class).progresses;
       return progressList.stream().map(progress -> progress.isPassed).toArray(Boolean[]::new);
     }
-    catch (URISyntaxException e) {
-      LOG.warn(e.getMessage());
-    }
-    catch (IOException e) {
+    catch (URISyntaxException | IOException e) {
       LOG.warn(e.getMessage());
     }
 
@@ -530,7 +502,7 @@ public class EduStepicConnector {
     }
   }
 
-  public static String postAttempt(int id) throws IOException {
+  static String postAttempt(int id) throws IOException {
     final CloseableHttpClient client = EduStepicAuthorizedClient.getHttpClient();
     if (client == null || StudySettings.getInstance().getUser() == null) return "";
     final HttpPost attemptRequest = new HttpPost(EduStepicNames.STEPIC_API_URL + EduStepicNames.ATTEMPTS);
@@ -569,7 +541,7 @@ public class EduStepicConnector {
   }
 
   @NotNull
-  public static String createOAuthLink(String authRedirectUrl) {
+  private static String createOAuthLink(String authRedirectUrl) {
     return "https://stepik.org/oauth2/authorize/" +
            "?client_id=" + EduStepicNames.CLIENT_ID +
            "&redirect_uri=" + authRedirectUrl +
