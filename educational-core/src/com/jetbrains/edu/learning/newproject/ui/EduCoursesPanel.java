@@ -264,6 +264,11 @@ public class EduCoursesPanel extends JPanel {
         UIUtil.toHtml("<u><b>Log in</b></u> to Stepik " + (selectedCourse.isAdaptive() ? "to start adaptive course" : "to see more courses")));
       myErrorLabel.setForeground((selectedCourse.isAdaptive() ? MessageType.ERROR : MessageType.WARNING).getTitleForeground());
     }
+    else {
+      myErrorLabel.setText("Import Stepik course");
+      myErrorLabel.setForeground(MessageType.WARNING.getTitleForeground());
+      myErrorLabel.setVisible(true);
+    }
   }
 
   @NotNull

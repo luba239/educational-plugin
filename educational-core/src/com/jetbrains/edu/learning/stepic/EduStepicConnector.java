@@ -35,8 +35,10 @@ import org.jetbrains.builtInWebServer.BuiltInServerOptions;
 import org.jetbrains.ide.BuiltInServerManager;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.*;
 
 import static com.jetbrains.edu.learning.stepic.EduStepicNames.PYCHARM_PREFIX;
@@ -126,7 +128,7 @@ public class EduStepicConnector {
       }
     }
     catch (IOException e) {
-      LOG.warn("Could not retrieve task with id=" + taskId);
+      LOG.warn("Could not retrieve an update date for a task with id=" + taskId);
     }
 
     return null;
@@ -159,10 +161,11 @@ public class EduStepicConnector {
   }
 
   @Nullable
-  public static Course getCourseFromStepik(@Nullable StepicUser user, int courseId) throws IOException {
+  public static Course getCourseFromStepik(@Nullable StepicUser user, int courseId, String isIdeaCompatible) throws IOException {
     final URI url;
     try {
-      url = new URIBuilder(EduStepicNames.COURSES + "/" + courseId).addParameter("is_idea_compatible", "true")
+      url = new URIBuilder(EduStepicNames.COURSES + "/" + courseId)
+        .addParameter("is_idea_compatible", isIdeaCompatible)
         .build();
     }
     catch (URISyntaxException e) {
@@ -199,6 +202,32 @@ public class EduStepicConnector {
         result.add(info);
       }
     }
+  }
+
+  public static Course getCourseByLink(@NotNull StepicUser user, @NotNull String link) throws IOException {
+    int courseId = getCourseIdFromLink(link);
+    if (courseId != -1) {
+      return getCourseFromStepik(user, courseId, "false");
+    }
+    return null;
+  }
+
+  private static int getCourseIdFromLink(@NotNull String link) {
+    int courseId = -1;
+    try {
+      URL url = new URL(link);
+      String[] pathParts = url.getPath().split("/");
+      for (int i = 0; i < pathParts.length; i++) {
+        String part = pathParts[i];
+        if (part.equals("course") && i + 1 < pathParts.length) {
+          courseId = Integer.parseInt(pathParts[i + 1]);
+        }
+      }
+    }
+    catch (MalformedURLException e) {
+      LOG.warn(e.getMessage());
+    }
+    return courseId;
   }
 
   private static void setCourseLanguage(RemoteCourse info) {
@@ -248,7 +277,7 @@ public class EduStepicConnector {
     if (!remoteCourse.isAdaptive()) {
       try {
         for (Integer section : remoteCourse.getSections()) {
-          remoteCourse.addLessons(getLessons(section));
+          remoteCourse.addLessons(getLessons(remoteCourse, section));
         }
         return remoteCourse;
       }
@@ -270,7 +299,7 @@ public class EduStepicConnector {
     return null;
   }
 
-  public static List<Lesson> getLessons(int sectionId) throws IOException {
+  public static List<Lesson> getLessons(RemoteCourse remoteCourse, int sectionId) throws IOException {
     final StepicWrappers.SectionContainer
       sectionContainer = getFromStepik(EduStepicNames.SECTIONS + String.valueOf(sectionId),
                                        StepicWrappers.SectionContainer.class);
@@ -286,7 +315,10 @@ public class EduStepicConnector {
       Lesson lesson = lessonContainer.lessons.get(0);
       lesson.taskList = new ArrayList<>();
       for (int stepId : lesson.steps) {
-        final Task task = createTask(stepId);
+        StepicWrappers.StepSource step = getStep(stepId);
+        StepicUser user = StudySettings.getInstance().getUser();
+        StepikTaskBuilder builder = new StepikTaskBuilder(remoteCourse, step.block.name, step, stepId, user == null ? -1 : user.getId());
+        final Task task = builder.createTask(step.block.name);
         if (task != null) {
           lesson.addTask(task);
         }

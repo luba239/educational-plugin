@@ -47,7 +47,7 @@ public class EduCreateNewStepikProjectDialog extends EduCreateNewProjectDialog {
           ProgressManager.getInstance().getProgressIndicator().setIndeterminate(true);
           execCancelable(() -> {
             try {
-              Course course = EduStepicConnector.getCourseFromStepik(user, courseId);
+              Course course = EduStepicConnector.getCourseFromStepik(user, courseId, "true");
               if (course != null) {
                 setTitle("New Project - " + course.getName());
               }
