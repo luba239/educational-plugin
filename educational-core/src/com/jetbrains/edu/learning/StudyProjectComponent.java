@@ -46,7 +46,6 @@ import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.editor.StudyEditorFactoryListener;
 import com.jetbrains.edu.learning.statistics.EduUsagesCollector;
-import com.jetbrains.edu.learning.stepic.EduStepicConnector;
 import com.jetbrains.edu.learning.ui.StudyStepicUserWidget;
 import com.jetbrains.edu.learning.ui.StudyToolWindow;
 import com.jetbrains.edu.learning.ui.StudyToolWindowFactory;
@@ -61,6 +60,7 @@ import java.util.Map;
 
 import static com.jetbrains.edu.learning.StudyUtils.execCancelable;
 import static com.jetbrains.edu.learning.StudyUtils.navigateToStep;
+import static com.jetbrains.edu.learning.stepic.EduStepicConnector.updateCourse;
 import static com.jetbrains.edu.learning.stepic.EduStepicNames.STEP_ID;
 
 
@@ -86,7 +86,7 @@ public class StudyProjectComponent implements ProjectComponent {
       () -> {
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
         if (course == null) {
-          LOG.warn("Opened myProject is with null course");
+          LOG.warn("Opened project is with null course");
           return;
         }
 
@@ -149,7 +149,7 @@ public class StudyProjectComponent implements ProjectComponent {
                            ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
                              ProgressManager.getInstance().getProgressIndicator().setIndeterminate(true);
                              return execCancelable(() -> {
-                               EduStepicConnector.updateCourse(StudyProjectComponent.this.myProject);
+                               updateCourse(myProject);
                                return true;
                              });
                            }, "Updating Course", true, myProject);
