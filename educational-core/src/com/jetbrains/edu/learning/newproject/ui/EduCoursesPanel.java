@@ -40,8 +40,6 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import javax.swing.border.Border;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -53,7 +51,7 @@ import java.util.stream.Collectors;
 public class EduCoursesPanel extends JPanel {
   private static final Set<String> FEATURED_COURSES = ContainerUtil.newHashSet("Introduction to Python", "Adaptive Python");
   private static final JBColor LIST_COLOR = new JBColor(Gray.xFF, Gray.x39);
-  public static final Color COLOR = new Color(70, 130, 180, 70);
+  private static final Color COLOR = new Color(70, 130, 180, 70);
   private static final Logger LOG = Logger.getInstance(EduCoursesPanel.class);
   private JPanel myMainPanel;
   private JPanel myCourseListPanel;
@@ -84,59 +82,107 @@ public class EduCoursesPanel extends JPanel {
     GuiUtils.replaceJSplitPaneWithIDEASplitter(mySplitPaneRoot, true);
     mySplitPane.setDividerLocation(0.5);
     mySplitPane.setResizeWeight(0.5);
+
     myCourseNameLabel.setBorder(JBUI.Borders.empty(20, 10, 5, 10));
-    Font labelFont = UIUtil.getLabelFont();
-    myCourseNameLabel.setFont(new Font(labelFont.getName(), Font.BOLD, JBUI.scaleFontSize(18.0f)));
-    myTagsPanel.setBorder(JBUI.Borders.empty(0, 10));
+    myCourseNameLabel.setFont(new Font(UIUtil.getLabelFont().getName(), Font.BOLD, JBUI.scaleFontSize(18.0f)));
+
     myDescriptionTextArea.setBorder(JBUI.Borders.empty(20, 10, 10, 10));
     myDescriptionTextArea.setEditorKit(UIUtil.getHTMLEditorKit());
     myDescriptionTextArea.setEditable(false);
     myDescriptionTextArea.setPreferredSize(JBUI.size(myCoursePanel.getPreferredSize()));
+    myDescriptionTextArea.setBackground(UIUtil.getPanelBackground());
+    myTagsPanel.setBorder(JBUI.Borders.empty(0, 10));
     myInfoScroll.setBorder(null);
-    myCoursesList = new JBList<>();
+
     myCourses = getCourses();
+    myCoursesList = new JBList<>();
     updateModel(myCourses, null);
+    myCoursesList.setCellRenderer(courseCellRenderer());
+    myCoursesList.setBorder(null);
+    myCoursesList.setBackground(LIST_COLOR);
+    myCoursesList.addListSelectionListener(e -> processSelectionChanged());
+    myCourseListPanel.add(importCourseToolbar(), BorderLayout.CENTER);
+    myCourseListPanel.setBorder(JBUI.Borders.customLine(OnePixelDivider.BACKGROUND, 1, 1, 1, 1));
+    Border border = JBUI.Borders.customLine(OnePixelDivider.BACKGROUND, 1, 0, 1, 1);
+    myCoursePanel.setBorder(border);
+
     myErrorLabel.setVisible(false);
     myErrorLabel.setBorder(JBUI.Borders.empty(20, 10, 0, 0));
+    myErrorLabel.addMouseListener(createLoginAndLoadStepikCourseListener());
 
-    ListCellRendererWrapper<Course> renderer = new ListCellRendererWrapper<Course>() {
+    myLocationField = createLocationComponent();
+    HideableDecorator decorator = new HideableDecorator(myAdvancedSettingsPlaceholder, "Advanced Settings", false);
+    decorator.setContentComponent(myAdvancedSettings);
+    myAdvancedSettings.setBorder(JBUI.Borders.empty(0, IdeBorderFactory.TITLED_BORDER_INDENT, 5, 0));
+    myAdvancedSettingsPlaceholder.setVisible(false);
+
+    processSelectionChanged();
+  }
+
+  @NotNull
+  private MouseAdapter createLoginAndLoadStepikCourseListener() {
+    return new MouseAdapter() {
       @Override
-      public void customize(JList list, Course value, int index, boolean selected, boolean hasFocus) {
-        setText(value.getName());
-        DirectoryProjectGenerator generator = getGenerator(value);
-        if (generator != null) {
-          boolean isPrivate = value instanceof RemoteCourse && !((RemoteCourse)value).isPublic();
-          setIcon(isPrivate ? getPrivateCourseIcon(generator.getLogo()) : generator.getLogo());
-          setToolTipText(isPrivate ? "Private course" : "");
+      public void mouseClicked(MouseEvent e) {
+        if (!isLoggedIn() && myErrorLabel.isVisible()) {
+          ApplicationManager.getApplication().getMessageBus().connect().subscribe(StudySettings.SETTINGS_CHANGED, () -> {
+            StepicUser user = StudySettings.getInstance().getUser();
+            if (user != null) {
+              ApplicationManager.getApplication().invokeLater(() -> {
+                Course selectedCourse = myCoursesList.getSelectedValue();
+                myCourses = getCourses();
+                updateModel(myCourses, selectedCourse.getName());
+                myErrorLabel.setVisible(false);
+                notifyListeners(true);
+              }, ModalityState.any());
+            }
+          });
+          EduStepicConnector.doAuthorize(StudyUtils::showOAuthDialog);
+        }
+        else if (isLoggedIn()) {
+          ImportStepikCourseDialog dialog = new ImportStepikCourseDialog();
+          dialog.pack();
+          dialog.setVisible(true);
+          Course course = dialog.getCourse();
+          if (course != null) {
+            myCourses.add(course);
+            updateModel(myCourses, course.getName());
+          }
         }
       }
 
-      @NotNull
-      public LayeredIcon getPrivateCourseIcon(@Nullable Icon languageLogo) {
-        LayeredIcon icon = new LayeredIcon(2);
-        icon.setIcon(languageLogo, 0, 0, 0);
-        icon.setIcon(AllIcons.Ide.Readonly, 1, JBUI.scale(7), JBUI.scale(7));
-        return icon;
+      @Override
+      public void mouseEntered(MouseEvent e) {
+        if (!isLoggedIn() && myErrorLabel.isVisible()) {
+          e.getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+      }
+
+      @Override
+      public void mouseExited(MouseEvent e) {
+        if (!isLoggedIn() && myErrorLabel.isVisible()) {
+          e.getComponent().setCursor(Cursor.getDefaultCursor());
+        }
       }
     };
-    myCoursesList.setCellRenderer(new DefaultListCellRenderer() {
-      @Override
-      public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-        Component component = renderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-        if (component instanceof JLabel) {
-          ((JLabel)component).setBorder(JBUI.Borders.empty(5, 0));
-        }
-        return component;
-      }
-    });
-    myLocationField = createLocationComponent();
-    myCoursesList.addListSelectionListener(new ListSelectionListener() {
-      @Override
-      public void valueChanged(ListSelectionEvent e) {
-        processSelectionChanged();
-      }
-    });
-    DefaultActionGroup group = new DefaultActionGroup(new AnAction("Import Course", "import local course", AllIcons.ToolbarDecorator.Import) {
+  }
+
+  @NotNull
+  private JPanel importCourseToolbar() {
+    ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(myCoursesList)
+      .disableAddAction()
+      .disableRemoveAction()
+      .disableUpDownActions()
+      .setActionGroup(importGroup())
+      .setToolbarPosition(ActionToolbarPosition.BOTTOM);
+    JPanel toolbarDecoratorPanel = toolbarDecorator.createPanel();
+    toolbarDecoratorPanel.setBorder(null);
+    return toolbarDecoratorPanel;
+  }
+
+  @NotNull
+  private DefaultActionGroup importGroup() {
+    return new DefaultActionGroup(new AnAction("Import Course", "Import local course", AllIcons.ToolbarDecorator.Import) {
       @Override
       public void actionPerformed(AnActionEvent e) {
         final FileChooserDescriptor fileChooser = new FileChooserDescriptor(true, false, false, true, false, false) {
@@ -164,58 +210,41 @@ public class EduCoursesPanel extends JPanel {
                                });
       }
     });
+  }
 
-    ToolbarDecorator toolbarDecorator = ToolbarDecorator.createDecorator(myCoursesList).
-      disableAddAction().disableRemoveAction().disableUpDownActions().setActionGroup(group).setToolbarPosition(ActionToolbarPosition.BOTTOM);
-    JPanel toolbarDecoratorPanel = toolbarDecorator.createPanel();
-    toolbarDecoratorPanel.setBorder(null);
-    myCoursesList.setBorder(null);
-    myCourseListPanel.add(toolbarDecoratorPanel, BorderLayout.CENTER);
-    Border border = JBUI.Borders.customLine(OnePixelDivider.BACKGROUND, 1, 0, 1, 1);
-    myCoursePanel.setBorder(border);
-    myCourseListPanel.setBorder(JBUI.Borders.customLine(OnePixelDivider.BACKGROUND, 1, 1, 1, 1));
-    HideableDecorator decorator = new HideableDecorator(myAdvancedSettingsPlaceholder, "Advanced Settings", false);
-    decorator.setContentComponent(myAdvancedSettings);
-    myAdvancedSettings.setBorder(JBUI.Borders.empty(0, IdeBorderFactory.TITLED_BORDER_INDENT, 5, 0));
-    myCoursesList.setBackground(LIST_COLOR);
-    myDescriptionTextArea.setBackground(UIUtil.getPanelBackground());
-    myAdvancedSettingsPlaceholder.setVisible(false);
-    myErrorLabel.addMouseListener(new MouseAdapter() {
+  @NotNull
+  private static DefaultListCellRenderer courseCellRenderer() {
+    ListCellRendererWrapper<Course> renderer = new ListCellRendererWrapper<Course>() {
       @Override
-      public void mouseClicked(MouseEvent e) {
-        if (!isLoggedIn() && myErrorLabel.isVisible()) {
-          ApplicationManager.getApplication().getMessageBus().connect().subscribe(StudySettings.SETTINGS_CHANGED, () -> {
-            StepicUser user = StudySettings.getInstance().getUser();
-            if (user != null) {
-              ApplicationManager.getApplication().invokeLater(() -> {
-                Course selectedCourse = myCoursesList.getSelectedValue();
-                myCourses = getCourses();
-                updateModel(myCourses, selectedCourse.getName());
-                myErrorLabel.setVisible(false);
-                notifyListeners(true);
-              }, ModalityState.any());
-            }
-          });
-          EduStepicConnector.doAuthorize(() -> StudyUtils.showOAuthDialog());
+      public void customize(JList list, Course value, int index, boolean selected, boolean hasFocus) {
+        setText(value.getName());
+        DirectoryProjectGenerator generator = getGenerator(value);
+        if (generator != null) {
+          boolean isPrivate = value instanceof RemoteCourse && !((RemoteCourse)value).isPublic();
+          setIcon(isPrivate ? getPrivateCourseIcon(generator.getLogo()) : generator.getLogo());
+          setToolTipText(isPrivate ? "Private course" : "");
         }
       }
 
-      @Override
-      public void mouseEntered(MouseEvent e) {
-        if (!isLoggedIn() && myErrorLabel.isVisible()) {
-          e.getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        }
+      @NotNull
+      LayeredIcon getPrivateCourseIcon(@Nullable Icon languageLogo) {
+        LayeredIcon icon = new LayeredIcon(2);
+        icon.setIcon(languageLogo, 0, 0, 0);
+        icon.setIcon(AllIcons.Ide.Readonly, 1, JBUI.scale(7), JBUI.scale(7));
+        return icon;
       }
+    };
 
+    return new DefaultListCellRenderer() {
       @Override
-      public void mouseExited(MouseEvent e) {
-        if (!isLoggedIn() && myErrorLabel.isVisible()) {
-          e.getComponent().setCursor(Cursor.getDefaultCursor());
+      public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+        Component component = renderer.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+        if (component instanceof JLabel) {
+          ((JLabel)component).setBorder(JBUI.Borders.empty(5, 0));
         }
+        return component;
       }
-    });
-
-    processSelectionChanged();
+    };
   }
 
   private void processSelectionChanged() {
@@ -329,7 +358,7 @@ public class EduCoursesPanel extends JPanel {
 
   private void updateModel(List<Course> courses, @Nullable String courseToSelect) {
     DefaultListModel<Course> listModel = new DefaultListModel<>();
-    Collections.sort(courses, Comparator.comparingInt(EduCoursesPanel::getWeight));
+    courses.sort(Comparator.comparingInt(EduCoursesPanel::getWeight));
     for (Course course : courses) {
       listModel.addElement(course);
     }
@@ -369,7 +398,7 @@ public class EduCoursesPanel extends JPanel {
     UIUtil.setBackgroundRecursively(mySearchField, UIUtil.getTextFieldBackground());
   }
 
-  public boolean accept(String filter, Course course) {
+  private boolean accept(String filter, Course course) {
     if (filter.isEmpty()) {
       return true;
     }
@@ -438,11 +467,7 @@ public class EduCoursesPanel extends JPanel {
       return false;
     }
 
-    if (isLoggedIn()) {
-      return true;
-    }
-
-    return !selectedCourse.isAdaptive();
+    return isLoggedIn() || !selectedCourse.isAdaptive();
   }
 
   public interface CourseValidationListener {
