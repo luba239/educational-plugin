@@ -16,10 +16,8 @@ import com.intellij.openapi.util.Key;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.ui.components.JBLabel;
-import com.intellij.ui.components.panels.NonOpaquePanel;
 import com.intellij.util.messages.MessageBusConnection;
 import com.intellij.util.ui.JBUI;
-import com.intellij.util.ui.UIUtil;
 import com.jetbrains.edu.learning.StudyTaskManager;
 import com.jetbrains.edu.learning.StudyUtils;
 import com.jetbrains.edu.learning.courseFormat.*;
@@ -34,8 +32,6 @@ import icons.EducationalCoreIcons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
-import java.awt.*;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -125,20 +121,17 @@ public class StudySyncCourseAction extends DumbAwareAction {
 
     if (studyEditor != null) {
       Editor editor = studyEditor.getEditor();
-      editor.setHeaderComponent(createNotificationPanel());
+      editor.setHeaderComponent(createNotificationLabel());
       ((EditorImpl)editor).setViewer(true);
       ((EditorImpl)editor).setCaretEnabled(false);
     }
   }
 
   @NotNull
-  private static JPanel createNotificationPanel() {
-    JPanel panel = new NonOpaquePanel(new BorderLayout());
+  private static JBLabel createNotificationLabel() {
     JBLabel solution = new JBLabel("Loading solution");
-    panel.setBackground(UIUtil.getToolTipBackground());
-    panel.add(solution, BorderLayout.CENTER);
-    panel.setBorder(JBUI.Borders.empty(10, 10));
-    return panel;
+    solution.setBorder(JBUI.Borders.empty(10, 10));
+    return solution;
   }
 
   private static ArrayList<Task> getSolvedTasksAndUpdateStatus(@NotNull Course course, @Nullable TaskFile selectedTaskFile, @NotNull Project project) {
