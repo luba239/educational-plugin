@@ -128,7 +128,6 @@ public class StudySyncCourseAction extends DumbAwareAction {
       editor.setHeaderComponent(createNotificationPanel());
       ((EditorImpl)editor).setViewer(true);
       ((EditorImpl)editor).setCaretEnabled(false);
-      ((EditorImpl)editor).setShowPlaceholderWhenFocused(false);
     }
   }
 
