@@ -69,7 +69,7 @@ public class PyEduPluginConfigurator implements EduPluginConfigurator {
       taskDirectory.set(DirectoryUtil.createSubdirectories(taskDirName, parentDirectory, "\\/"));
       if (taskDirectory.isNull()) return;
 
-      if (EduNames.STUDY.equals(course.getCourseMode()) && !task.getTaskFiles().isEmpty()) {
+      if (StudyUtils.isStudentProject(project) && !task.getTaskFiles().isEmpty()) {
         createTaskFilesFromText(task, taskDirectory.get());
       }
       else {
