@@ -32,10 +32,12 @@ public class StudyResetCourseAction extends DumbAwareAction {
     Project project = e.getProject();
     assert project != null;
 
-    Course course = StudyTaskManager.getInstance(project).getCourse();
+    StudyTaskManager studyTaskManager = StudyTaskManager.getInstance(project);
+    Course course = studyTaskManager.getCourse();
     assert course != null;
 
     removeAllLessons(project, course);
+    studyTaskManager.setMyLoadSolutions(false);
 
     ApplicationManager.getApplication().invokeLater(() -> {
       ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {

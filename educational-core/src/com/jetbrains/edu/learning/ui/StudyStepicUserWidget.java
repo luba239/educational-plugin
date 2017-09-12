@@ -85,7 +85,7 @@ public class StudyStepicUserWidget implements IconLikeCustomStatusBarWidget {
     String userActionStep = user == null ? loginText : logOutText;
 
     ArrayList<String> steps = new ArrayList<>();
-    if (user != null) {
+    if (user != null && StudySyncCourseAction.isVisible(project)) {
       steps.add(syncCourseStep);
     }
     steps.add(userActionStep);

@@ -251,22 +251,28 @@ public class StudySyncCourseAction extends DumbAwareAction {
     }, "Synchronizing Course", true, project);
   }
 
+  public static boolean isVisible(@Nullable Project project) {
+    if (project == null) {
+      return false;
+    }
+
+    StudyTaskManager taskManager = StudyTaskManager.getInstance(project);
+    Course course = taskManager.getCourse();
+    if (course == null) {
+      return false;
+    }
+
+    if (!taskManager.isMyLoadSolutions()) {
+      return false;
+    }
+
+    return true;
+  }
+
   @Override
   public void update(AnActionEvent e) {
+    boolean visible = isVisible(e.getProject());
     Presentation presentation = e.getPresentation();
-
-    Project project = e.getProject();
-    if (project == null) {
-      presentation.setEnabledAndVisible(false);
-      return;
-    }
-
-    Course course = StudyTaskManager.getInstance(project).getCourse();
-    if (course == null) {
-      presentation.setEnabledAndVisible(false);
-      return;
-    }
-
-    presentation.setEnabledAndVisible(true);
+    presentation.setEnabledAndVisible(visible);
   }
 }

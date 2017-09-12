@@ -49,6 +49,7 @@ public class StudyTaskManager implements PersistentStateComponent<Element>, Dumb
 
   private StudyToolWindow.StudyToolWindowMode myToolWindowMode = StudyToolWindow.StudyToolWindowMode.TEXT;
   private boolean myTurnEditingMode = false;
+  private boolean myLoadSolutions = true;
 
   @Transient private final Project myProject;
 
@@ -246,4 +247,11 @@ public class StudyTaskManager implements PersistentStateComponent<Element>, Dumb
     myTurnEditingMode = turnEditingMode;
   }
 
+  public boolean isMyLoadSolutions() {
+    return myLoadSolutions;
+  }
+
+  public void setMyLoadSolutions(boolean myLoadSolutions) {
+    this.myLoadSolutions = myLoadSolutions;
+  }
 }
