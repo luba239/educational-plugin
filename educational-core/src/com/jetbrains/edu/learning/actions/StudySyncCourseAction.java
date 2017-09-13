@@ -213,8 +213,9 @@ public class StudySyncCourseAction extends DumbAwareAction {
       for (StepicWrappers.SolutionFile file : solutionFiles) {
         TaskFile taskFile = task.getTaskFile(file.name);
         if (taskFile != null) {
-          EduStepicConnector.setPlaceholdersFromTags(taskFile, file);
-          taskFile.text = removeAllTags(file.text);
+          if (EduStepicConnector.setPlaceholdersFromTags(taskFile, file)) {
+            taskFile.text = removeAllTags(file.text);
+          }
         }
       }
       EduAdaptiveStepicConnector.replaceCurrentTask(project, task, task.getLesson(), task.getIndex());

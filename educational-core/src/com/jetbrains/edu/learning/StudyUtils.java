@@ -771,4 +771,35 @@ public class StudyUtils {
     }
     return new File(jarPath, "courses");
   }
+
+  public static boolean isTaskValid(@NotNull Task task) {
+    for (TaskFile taskFile : task.getTaskFiles().values()) {
+      if (!isTaskFileValid(taskFile)) return false;
+    }
+    return true;
+  }
+
+  private static boolean isTaskFileValid(TaskFile taskFile) {
+    String text = taskFile.text;
+    int length = text.length();
+    List<AnswerPlaceholder> placeholders = taskFile.getAnswerPlaceholders();
+    for (AnswerPlaceholder placeholder : placeholders) {
+      if (!isPlaceholderValid(text, length, placeholder)) return false;
+    }
+    return true;
+  }
+
+  private static boolean isPlaceholderValid(String text, int length, AnswerPlaceholder placeholder) {
+    int end = placeholder.getOffset() + placeholder.getLength();
+    if (end >= length) {
+      return false;
+    }
+
+    String actualText = text.substring(placeholder.getOffset(), end);
+    if (!actualText.equals(placeholder.getTaskText())) {
+      return false;
+    }
+
+    return true;
+  }
 }

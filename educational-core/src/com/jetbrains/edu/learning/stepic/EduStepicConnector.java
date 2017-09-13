@@ -350,7 +350,7 @@ public class EduStepicConnector {
     return task;
   }
 
-  public static void setPlaceholdersFromTags(@NotNull TaskFile taskFile, @NotNull StepicWrappers.SolutionFile solutionFile) {
+  public static boolean setPlaceholdersFromTags(@NotNull TaskFile taskFile, @NotNull StepicWrappers.SolutionFile solutionFile) {
     int lastIndex = 0;
     StringBuilder builder = new StringBuilder(solutionFile.text);
     List<AnswerPlaceholder> placeholders = taskFile.getActivePlaceholders();
@@ -358,7 +358,8 @@ public class EduStepicConnector {
       int start = builder.indexOf(OPEN_PLACEHOLDER_TAG, lastIndex);
       int end = builder.indexOf(CLOSE_PLACEHOLDER_TAG, start);
       if (start == -1 || end == -1) {
-        break;
+        makeInvisible(placeholder);
+        return false;
       }
       String placeholderText = builder.substring(start + OPEN_PLACEHOLDER_TAG.length(), end);
       placeholder.setTaskText(placeholderText);
@@ -368,6 +369,12 @@ public class EduStepicConnector {
       builder.delete(start, start + OPEN_PLACEHOLDER_TAG.length());
       lastIndex = start + placeholderText.length();
     }
+    return true;
+  }
+
+  private static void makeInvisible(AnswerPlaceholder placeholder) {
+    placeholder.setLength(0);
+    placeholder.setOffset(0);
   }
 
   public static String removeAllTags(@NotNull String text) {
