@@ -33,8 +33,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getLastSubmission;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags;
@@ -73,18 +72,20 @@ public class StudySyncCourseAction extends DumbAwareAction {
       @Override
       public void run(@NotNull ProgressIndicator indicator) {
         TaskFile selectedTaskFile = StudyUtils.getSelectedTaskFile(project);
-        ArrayList<Task> tasksToUpdate = getSolvedTasksAndUpdateStatus(course, selectedTaskFile, project);
+        Map<Task, StudyStatus> tasksToUpdate = tasksToUpdate(course);
 
-        for (Task task : tasksToUpdate) {
-          boolean isSolved = task.getStatus() == StudyStatus.Solved;
+        for (Map.Entry<Task, StudyStatus> entry : tasksToUpdate.entrySet()) {
+          Task task = entry.getKey();
+          StudyStatus status = entry.getValue();
+          boolean isSolved = status == StudyStatus.Solved;
           updateTaskSolution(project, task, isSolved);
         }
 
         connection.disconnect();
-        refreshFiles(tasksToUpdate, selectedTaskFile);
+        refreshFiles(tasksToUpdate.keySet(), selectedTaskFile);
       }
 
-      private void refreshFiles(ArrayList<Task> tasksToUpdate, TaskFile selectedTaskFile) {
+      private void refreshFiles(Set<Task> tasksToUpdate, TaskFile selectedTaskFile) {
         if (!tasksToUpdate.isEmpty()) {
           ApplicationManager.getApplication().invokeLater(() -> {
             VirtualFileManager.getInstance().refreshWithoutFileWatcher(false);
@@ -134,12 +135,8 @@ public class StudySyncCourseAction extends DumbAwareAction {
     return solution;
   }
 
-  private static ArrayList<Task> getSolvedTasksAndUpdateStatus(@NotNull Course course, @Nullable TaskFile selectedTaskFile, @NotNull Project project) {
-    Task selectedTask = null;
-    if (selectedTaskFile != null) {
-      selectedTask = selectedTaskFile.getTask();
-    }
-    ArrayList<Task> taskToUpdate = new ArrayList<>();
+  private static Map<Task, StudyStatus> tasksToUpdate(@NotNull Course course) {
+    Map<Task, StudyStatus> tasksToUpdate = new HashMap<>();
     for (Lesson lesson : course.getLessons()) {
       List<Task> tasks = lesson.getTaskList();
       int[] ids = tasks.stream().mapToInt(Task::getStepId).toArray();
@@ -147,27 +144,17 @@ public class StudySyncCourseAction extends DumbAwareAction {
       if (steps != null) {
         String[] progresses = steps.stream().map(step -> step.progress).toArray(String[]::new);
         Boolean[] solved = EduStepicConnector.isTasksSolved(progresses);
-        if (solved == null) return taskToUpdate;
+        if (solved == null) return tasksToUpdate;
         for (int i = 0; i < tasks.size(); i++) {
           Boolean isSolved = solved[i];
           Task task = tasks.get(i);
-          if (isSolved != null) {
-            if (isToUpdate(isSolved, task)) {
-              task.setStatus(isSolved ? StudyStatus.Solved : StudyStatus.Failed);
-              if (task.equals(selectedTask)) {
-                disableEditor(project);
-              }
-              VirtualFile taskDir = task.getTaskDir(project);
-              if (taskDir != null) {
-                taskDir.putUserData(IS_TO_UPDATE, true);
-              }
-              taskToUpdate.add(tasks.get(i));
-            }
+          if (isSolved != null && isToUpdate(isSolved, task)) {
+            tasksToUpdate.put(tasks.get(i), isSolved ? StudyStatus.Solved : StudyStatus.Failed);
           }
         }
       }
     }
-    return taskToUpdate;
+    return tasksToUpdate;
   }
 
   private static boolean isToUpdate(@NotNull Boolean isSolved, @NotNull Task task) {
