@@ -139,18 +139,15 @@ public class StudySyncCourseAction extends DumbAwareAction {
     Map<Task, StudyStatus> tasksToUpdate = new HashMap<>();
     for (Lesson lesson : course.getLessons()) {
       List<Task> tasks = lesson.getTaskList();
-      int[] ids = tasks.stream().mapToInt(Task::getStepId).toArray();
-      List<StepicWrappers.StepSource> steps = EduStepicConnector.getSteps(ids);
-      if (steps != null) {
-        String[] progresses = steps.stream().map(step -> step.progress).toArray(String[]::new);
-        Boolean[] solved = EduStepicConnector.isTasksSolved(progresses);
-        if (solved == null) return tasksToUpdate;
-        for (int i = 0; i < tasks.size(); i++) {
-          Boolean isSolved = solved[i];
-          Task task = tasks.get(i);
-          if (isSolved != null && isToUpdate(isSolved, task)) {
-            tasksToUpdate.put(tasks.get(i), isSolved ? StudyStatus.Solved : StudyStatus.Failed);
-          }
+      String[] ids = tasks.stream().map(Task::getStepId).toArray(String[]::new);
+      String[] progresses = Arrays.stream(ids).map(id -> ("77-" + id)).toArray(String[]::new);
+      Boolean[]solved = EduStepicConnector.isTasksSolved(progresses);
+      if (solved == null) return tasksToUpdate;
+      for (int i = 0; i < tasks.size(); i++) {
+        Boolean isSolved = solved[i];
+        Task task = tasks.get(i);
+        if (isSolved != null && isToUpdate(isSolved, task)) {
+          tasksToUpdate.put(tasks.get(i), isSolved ? StudyStatus.Solved : StudyStatus.Failed);
         }
       }
     }
