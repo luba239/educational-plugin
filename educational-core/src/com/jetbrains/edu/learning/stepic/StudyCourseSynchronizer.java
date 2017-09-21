@@ -64,13 +64,13 @@ public class StudyCourseSynchronizer {
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
         if (course != null) {
           Map<Task, StudyStatus> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
-          update(tasksToUpdate);
+          update(tasksToUpdate, progressIndicator);
         }
       }
     });
   }
 
-  public void update(Map<Task, StudyStatus> tasksToUpdate) {
+  private void update(Map<Task, StudyStatus> tasksToUpdate, ProgressIndicator progressIndicator) {
     myFutures = new HashMap<>();
 
     if (tasksToUpdate == null) {
@@ -83,8 +83,10 @@ public class StudyCourseSynchronizer {
       StudyStatus status = taskStudyStatusEntry.getValue();
       task.setStatus(status);
       Future<?> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
-        boolean isSolved = task.getStatus() == StudyStatus.Solved;
-        updateTaskSolution(myProject, task, isSolved);
+        if (!progressIndicator.isCanceled()) {
+          boolean isSolved = task.getStatus() == StudyStatus.Solved;
+          updateTaskSolution(myProject, task, isSolved);
+        }
         countDownLatch.countDown();
       });
       myFutures.put(task, future);
@@ -99,6 +101,7 @@ public class StudyCourseSynchronizer {
         waitUntilTaskUpdatesAndEnableEditor(myFutures.get(selectedTask));
       });
     }
+
     try {
       countDownLatch.await();
       ApplicationManager.getApplication().invokeLater(() -> ApplicationManager.getApplication().runWriteAction(EduUtils::synchronize));
@@ -111,6 +114,9 @@ public class StudyCourseSynchronizer {
 
   private static Map<Task, StudyStatus> tasksToUpdate(@NotNull Course course) {
     Map<Task, StudyStatus> tasksToUpdate = new HashMap<>();
+    if (!EduStepicConnector.ping()) {
+      return tasksToUpdate;
+    }
     for (Lesson lesson : course.getLessons()) {
       List<Task> tasks = lesson.getTaskList();
       String[] ids = tasks.stream().map(task -> String.valueOf(task.getStepId())).toArray(String[]::new);
@@ -193,7 +199,7 @@ public class StudyCourseSynchronizer {
   }
 
   private static void updateTaskSolution(@NotNull Project project, Task task, boolean isSolved) {
-    if (task instanceof TaskWithSubtasks) {
+    if (task instanceof TaskWithSubtasks || !EduStepicConnector.ping()) {
       return;
     }
 
