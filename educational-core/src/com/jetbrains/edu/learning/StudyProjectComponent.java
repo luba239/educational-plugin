@@ -37,7 +37,6 @@ import com.intellij.util.messages.MessageBusConnection;
 import com.jetbrains.edu.learning.actions.StudyActionWithShortcut;
 import com.jetbrains.edu.learning.actions.StudyNextWindowAction;
 import com.jetbrains.edu.learning.actions.StudyPrevWindowAction;
-import com.jetbrains.edu.learning.actions.StudySyncCourseAction;
 import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.core.EduUtils;
 import com.jetbrains.edu.learning.courseFormat.Course;
@@ -46,6 +45,7 @@ import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.editor.StudyEditorFactoryListener;
 import com.jetbrains.edu.learning.statistics.EduUsagesCollector;
+import com.jetbrains.edu.learning.stepic.StudyCourseSynchronizer;
 import com.jetbrains.edu.learning.ui.StudyStepicUserWidget;
 import com.jetbrains.edu.learning.ui.StudyToolWindow;
 import com.jetbrains.edu.learning.ui.StudyToolWindowFactory;
@@ -90,11 +90,13 @@ public class StudyProjectComponent implements ProjectComponent {
           return;
         }
 
+        StudyCourseSynchronizer studyCourseSynchronizer = new StudyCourseSynchronizer(myProject);
+        studyCourseSynchronizer.init();
+        studyCourseSynchronizer.updateUnderProgress();
+
         if (!course.isAdaptive() && !course.isUpToDate()) {
           updateAvailable(course);
         }
-
-        StudySyncCourseAction.updateCourse(myProject, course);
 
         StudyUtils.registerStudyToolWindow(course, myProject);
         addStepicWidget();

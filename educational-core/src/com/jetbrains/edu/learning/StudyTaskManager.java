@@ -247,7 +247,7 @@ public class StudyTaskManager implements PersistentStateComponent<Element>, Dumb
     myTurnEditingMode = turnEditingMode;
   }
 
-  public boolean isMyLoadSolutions() {
+  public boolean isLoadSolutions() {
     return myLoadSolutions;
   }
 

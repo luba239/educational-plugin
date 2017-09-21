@@ -446,7 +446,7 @@ public class EduStepicConnector {
   }
 
   @Nullable
-  public static Boolean[] isTasksSolved(String[] progresses) {
+  static Boolean[] taskStatuses(String[] progresses) {
     try {
       URIBuilder builder = new URIBuilder(EduStepicNames.PROGRESS);
       for (String progress : progresses) {
