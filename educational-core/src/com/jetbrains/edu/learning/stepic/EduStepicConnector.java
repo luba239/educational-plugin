@@ -350,7 +350,7 @@ public class EduStepicConnector {
     return task;
   }
 
-  public static boolean setPlaceholdersFromTags(@NotNull TaskFile taskFile, @NotNull StepicWrappers.SolutionFile solutionFile) {
+  static boolean setPlaceholdersFromTags(@NotNull TaskFile taskFile, @NotNull StepicWrappers.SolutionFile solutionFile) {
     int lastIndex = 0;
     StringBuilder builder = new StringBuilder(solutionFile.text);
     List<AnswerPlaceholder> placeholders = taskFile.getActivePlaceholders();
@@ -377,14 +377,14 @@ public class EduStepicConnector {
     placeholder.setOffset(0);
   }
 
-  public static String removeAllTags(@NotNull String text) {
+  static String removeAllTags(@NotNull String text) {
     String result = text.replaceAll(OPEN_PLACEHOLDER_TAG, "");
     result = result.replaceAll(CLOSE_PLACEHOLDER_TAG, "");
     return result;
   }
 
   @NotNull
-  public static List<StepicWrappers.SolutionFile> getLastSubmission(String stepId) throws IOException {
+  static List<StepicWrappers.SolutionFile> getLastSubmission(String stepId) throws IOException {
     try {
       URI url = new URIBuilder(EduStepicNames.SUBMISSIONS)
         .addParameter("order", "desc")
@@ -427,22 +427,6 @@ public class EduStepicConnector {
   static StepicWrappers.StepSource getStep(int step) throws IOException {
     return getFromStepik(EduStepicNames.STEPS + String.valueOf(step),
                          StepicWrappers.StepContainer.class).steps.get(0);
-  }
-
-  public static List<StepicWrappers.StepSource> getSteps(int[] stepIds) {
-    try {
-      URIBuilder builder = new URIBuilder(EduStepicNames.STEPS);
-      for (int stepId : stepIds) {
-        builder.addParameter("ids[]", String.valueOf(stepId));
-      }
-      String url = builder.build().toString();
-      return getFromStepik(url, StepicWrappers.StepContainer.class).steps;
-    }
-    catch (IOException | URISyntaxException e) {
-      LOG.warn(e.getMessage());
-    }
-
-    return null;
   }
 
   @Nullable
