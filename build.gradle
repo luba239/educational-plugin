@@ -86,7 +86,7 @@ intellij {
     pluginName 'EduTools'
     updateSinceUntilBuild true
     downloadSources false
-    plugins 'junit', 'Kotlin', "PythonCore:$pythonPluginVersion"
+    plugins 'junit', 'Kotlin', "PythonCore:$pythonPluginVersion", 'android'
 }
 
 task configurePyCharm {
@@ -162,7 +162,7 @@ configure([project(':Edu-Python'), project(':Edu-Java'), project(':Edu-Kotlin')]
 }
 
 configure([project(':educational-core'), project(':Edu-Java')]) {
-    intellij.plugins 'junit'
+    intellij.plugins 'junit', 'android'
 }
 
 configure(project(':Edu-Kotlin')) {
