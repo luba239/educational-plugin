@@ -609,7 +609,7 @@ public class EduStepicConnector {
     HttpGet httpGet = new HttpGet(EduStepicNames.STEPIC_URL);
 
     int timeoutSeconds = 10;
-    int CONNECTION_TIMEOUT_MS = timeoutSeconds * 1000; // Timeout in millis.
+    int CONNECTION_TIMEOUT_MS = timeoutSeconds * 1000;
     RequestConfig requestConfig = RequestConfig.custom()
             .setConnectionRequestTimeout(CONNECTION_TIMEOUT_MS)
             .setConnectTimeout(CONNECTION_TIMEOUT_MS)
