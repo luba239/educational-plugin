@@ -1,5 +1,7 @@
 package com.jetbrains.edu.learning;
 
+import com.intellij.ide.projectView.ProjectView;
+import com.intellij.ide.projectView.impl.ProjectViewPane;
 import com.intellij.ide.ui.UISettings;
 import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.notification.Notification;
@@ -24,7 +26,10 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.StartupManager;
 import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.io.FileUtil;
-import com.intellij.openapi.vfs.*;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.VirtualFileAdapter;
+import com.intellij.openapi.vfs.VirtualFileEvent;
+import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.ToolWindow;
 import com.intellij.openapi.wm.ToolWindowManager;
@@ -80,6 +85,7 @@ public class StudyProjectComponent implements ProjectComponent {
 
     StartupManager.getInstance(myProject).runWhenProjectIsInitialized(
       () -> {
+        ProjectView.getInstance(myProject).changeView(ProjectViewPane.ID);
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
         if (course == null) {
           LOG.warn("Opened project is with null course");
