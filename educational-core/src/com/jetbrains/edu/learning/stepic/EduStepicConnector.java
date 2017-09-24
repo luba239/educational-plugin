@@ -434,12 +434,9 @@ public class EduStepicConnector {
   @Nullable
   static Boolean[] taskStatuses(String[] progresses) {
     try {
-      URIBuilder builder = new URIBuilder(EduStepicNames.PROGRESS);
-      for (String progress : progresses) {
-        builder.addParameter("ids[]", progress);
-      }
-      String link = builder.build().toString();
-      List<StepicWrappers.ProgressContainer.Progress> progressList = getFromStepik(link, StepicWrappers.ProgressContainer.class).progresses;
+      StepicWrappers.ProgressContainer progressContainer = multipleRequestToStepik(EduStepicNames.PROGRESS, progresses, StepicWrappers.ProgressContainer.class);
+      if (progressContainer == null) return null;
+      List<StepicWrappers.ProgressContainer.Progress> progressList = progressContainer.progresses;
       return progressList.stream().map(progress -> progress.isPassed).toArray(Boolean[]::new);
     }
     catch (URISyntaxException | IOException e) {
@@ -447,6 +444,16 @@ public class EduStepicConnector {
     }
 
     return null;
+  }
+
+  @Nullable
+  private static <T> T multipleRequestToStepik(String apiUrl, String[] ids, final Class<T> container) throws URISyntaxException, IOException {
+    URIBuilder builder = new URIBuilder(apiUrl);
+    for (String id : ids) {
+      builder.addParameter("ids[]", id);
+    }
+    String link = builder.build().toString();
+    return getFromStepik(link, container);
   }
 
   public static void postSolution(@NotNull final Task task, boolean passed, @NotNull final Project project) {

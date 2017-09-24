@@ -17,7 +17,6 @@ import com.jetbrains.edu.learning.StudyTaskManager;
 import com.jetbrains.edu.learning.StudyUtils;
 import com.jetbrains.edu.learning.core.EduUtils;
 import com.jetbrains.edu.learning.courseFormat.Course;
-import com.jetbrains.edu.learning.courseFormat.Lesson;
 import com.jetbrains.edu.learning.courseFormat.StudyStatus;
 import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
@@ -39,6 +38,7 @@ import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags
 
 public class StudyCourseSynchronizer {
   private static final Logger LOG = DefaultLogger.getInstance(StudyCourseSynchronizer.class);
+  private static final int MAX_REQUEST_PARAMS = 100; // restriction od Stepik API for multiple requests
   private static TaskFile mySelectedTaskFile;
   private static HashMap<Task, Future> myFutures;
   private final MessageBusConnection myBusConnection;
@@ -117,17 +117,18 @@ public class StudyCourseSynchronizer {
     if (!EduStepicConnector.ping()) {
       return tasksToUpdate;
     }
-    for (Lesson lesson : course.getLessons()) {
-      List<Task> tasks = lesson.getTaskList();
-      String[] ids = tasks.stream().map(task -> String.valueOf(task.getStepId())).toArray(String[]::new);
-      String[] progresses = Arrays.stream(ids).map(id -> ("77-" + id)).toArray(String[]::new);
+    Task[] allTasks = course.getLessons().stream().flatMap(lesson -> lesson.getTaskList().stream()).toArray(Task[]::new);
+    int length = allTasks.length;
+    for (int i = 0; i < length; i += MAX_REQUEST_PARAMS) {
+      List<Task> sublist = Arrays.asList(allTasks).subList(i, Math.min(i + MAX_REQUEST_PARAMS, length));
+      String[] progresses = sublist.stream().map(task -> "77-" + String.valueOf(task.getStepId())).toArray(String[]::new);
       Boolean[] taskStatuses = EduStepicConnector.taskStatuses(progresses);
       if (taskStatuses == null) return tasksToUpdate;
-      for (int i = 0; i < tasks.size(); i++) {
-        Boolean isSolved = taskStatuses[i];
-        Task task = tasks.get(i);
+      for (int j = 0; j < sublist.size(); j++) {
+        Boolean isSolved = taskStatuses[j];
+        Task task = allTasks[j];
         if (isSolved != null && isToUpdate(isSolved, task)) {
-          tasksToUpdate.put(tasks.get(i), isSolved ? StudyStatus.Solved : StudyStatus.Failed);
+          tasksToUpdate.put(allTasks[j], isSolved ? StudyStatus.Solved : StudyStatus.Failed);
         }
       }
     }
