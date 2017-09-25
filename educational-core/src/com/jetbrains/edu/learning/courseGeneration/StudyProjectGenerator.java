@@ -8,6 +8,7 @@ import com.intellij.lang.LanguageExtensionPoint;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.extensions.Extensions;
+import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
@@ -28,6 +29,7 @@ import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.statistics.EduUsagesCollector;
 import com.jetbrains.edu.learning.stepic.EduStepicConnector;
 import com.jetbrains.edu.learning.stepic.StepicUser;
+import com.jetbrains.edu.learning.stepic.StudyCourseSynchronizer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -96,17 +98,23 @@ public class StudyProjectGenerator {
     if (mySelectedCourse instanceof RemoteCourse) {
       return getCourseFromStepic(project, (RemoteCourse)mySelectedCourse);
     }
-    mySelectedCourse.initCourse(false);
+    else {
+      mySelectedCourse.initCourse(false);
+    }
     return mySelectedCourse;
   }
 
   private static RemoteCourse getCourseFromStepic(@NotNull Project project, RemoteCourse selectedCourse) {
     return ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
-      ProgressManager.getInstance().getProgressIndicator().setIndeterminate(true);
+      ProgressIndicator progressIndicator = ProgressManager.getInstance().getProgressIndicator();
+      progressIndicator.setIndeterminate(true);
       return execCancelable(() -> {
         final RemoteCourse course = EduStepicConnector.getCourse(project, selectedCourse);
         if (StudyUtils.isCourseValid(course)) {
           course.initCourse(false);
+          StudyCourseSynchronizer studyCourseSynchronizer = new StudyCourseSynchronizer(project);
+          studyCourseSynchronizer.init();
+          studyCourseSynchronizer.update(progressIndicator, course);
         }
         return course;
       });

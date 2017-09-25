@@ -39,10 +39,10 @@ import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags
 public class StudyCourseSynchronizer {
   private static final Logger LOG = DefaultLogger.getInstance(StudyCourseSynchronizer.class);
   private static final int MAX_REQUEST_PARAMS = 100; // restriction od Stepik API for multiple requests
-  private static TaskFile mySelectedTaskFile;
   private static HashMap<Task, Future> myFutures;
   private final MessageBusConnection myBusConnection;
   private Project myProject;
+  private Task mySelectedTask;
 
   public StudyCourseSynchronizer(@NotNull final Project project) {
     myProject = project;
@@ -51,8 +51,8 @@ public class StudyCourseSynchronizer {
 
   public void init() {
     StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
-    if (selectedStudyEditor != null) {
-      mySelectedTaskFile = selectedStudyEditor.getTaskFile();
+    if (selectedStudyEditor != null && selectedStudyEditor.getTaskFile() != null) {
+      mySelectedTask = selectedStudyEditor.getTaskFile().getTask();
     }
     addFileOpenListener();
   }
@@ -63,14 +63,18 @@ public class StudyCourseSynchronizer {
       public void run(@NotNull ProgressIndicator progressIndicator) {
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
         if (course != null) {
-          Map<Task, StudyStatus> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
-          update(tasksToUpdate, progressIndicator);
+          update(progressIndicator, course);
         }
       }
     });
   }
 
-  private void update(Map<Task, StudyStatus> tasksToUpdate, ProgressIndicator progressIndicator) {
+  public void update(@NotNull ProgressIndicator progressIndicator, @NotNull Course course) {
+    Map<Task, StudyStatus> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
+    updateTasks(tasksToUpdate, progressIndicator);
+  }
+
+  private void updateTasks(Map<Task, StudyStatus> tasksToUpdate, ProgressIndicator progressIndicator) {
     myFutures = new HashMap<>();
 
     if (tasksToUpdate == null) {
@@ -92,13 +96,12 @@ public class StudyCourseSynchronizer {
       myFutures.put(task, future);
     }
 
-    Task selectedTask = mySelectedTaskFile.getTask();
-    if (tasksToUpdate.containsKey(selectedTask)) {
+    if (mySelectedTask != null && tasksToUpdate.containsKey(mySelectedTask)) {
       StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
       assert selectedStudyEditor != null;
       ApplicationManager.getApplication().invokeLater(() -> {
         showLoadingPanel(selectedStudyEditor);
-        waitUntilTaskUpdatesAndEnableEditor(myFutures.get(selectedTask));
+        waitUntilTaskUpdatesAndEnableEditor(myFutures.get(mySelectedTask));
       });
     }
 
@@ -127,7 +130,7 @@ public class StudyCourseSynchronizer {
       for (int j = 0; j < sublist.size(); j++) {
         Boolean isSolved = taskStatuses[j];
         Task task = allTasks[j];
-        if (isSolved != null && isToUpdate(isSolved, task)) {
+        if (isSolved != null && isToUpdate(isSolved, task.getStatus(), task.getStepId())) {
           tasksToUpdate.put(allTasks[j], isSolved ? StudyStatus.Solved : StudyStatus.Failed);
         }
       }
@@ -142,7 +145,7 @@ public class StudyCourseSynchronizer {
         StudyEditor studyEditor = StudyUtils.getSelectedStudyEditor(myProject);
         TaskFile taskFile = StudyUtils.getTaskFile(myProject, file);
         if (studyEditor != null && taskFile != null) {
-          mySelectedTaskFile = taskFile;
+          mySelectedTask = taskFile.getTask();
           Task task = taskFile.getTask();
           if (myFutures != null && myFutures.containsKey(task)) {
             showLoadingPanel(studyEditor);
@@ -168,7 +171,7 @@ public class StudyCourseSynchronizer {
         future.get();
         ApplicationManager.getApplication().invokeLater(() -> {
           StudyEditor selectedEditor = StudyUtils.getSelectedStudyEditor(myProject);
-          if (selectedEditor != null && mySelectedTaskFile.equals(selectedEditor.getTaskFile())) {
+          if (selectedEditor != null && mySelectedTask.getTaskFiles().containsKey(selectedEditor.getTaskFile().name)) {
             JBLoadingPanel component = selectedEditor.getComponent();
             component.stopLoading();
           }
@@ -181,12 +184,13 @@ public class StudyCourseSynchronizer {
     });
   }
 
-  private static boolean isToUpdate(@NotNull Boolean isSolved, @NotNull Task task) {
-    if (isSolved && task.getStatus() != StudyStatus.Solved) {
+  private static boolean isToUpdate(@NotNull Boolean isSolved, @NotNull StudyStatus currentStatus, int stepId) {
+    if (isSolved && currentStatus != StudyStatus.Solved) {
       return true;
-    } else if (!isSolved) {
+    }
+    else if (!isSolved) {
       try {
-        List<StepicWrappers.SolutionFile> solutionFiles = EduStepicConnector.getLastSubmission(String.valueOf(task.getStepId()));
+        List<StepicWrappers.SolutionFile> solutionFiles = EduStepicConnector.getLastSubmission(String.valueOf(stepId), isSolved);
         if (!solutionFiles.isEmpty()) {
           return true;
         }
@@ -199,26 +203,13 @@ public class StudyCourseSynchronizer {
     return false;
   }
 
-  private static void updateTaskSolution(@NotNull Project project, Task task, boolean isSolved) {
+  private static void updateTaskSolution(@NotNull Project project, @NotNull Task task, boolean isSolved) {
     if (task instanceof TaskWithSubtasks || !EduStepicConnector.ping()) {
       return;
     }
 
     try {
-      List<StepicWrappers.SolutionFile> solutionFiles = getLastSubmission(String.valueOf(task.getStepId()));
-      if (solutionFiles.isEmpty()) {
-        task.setStatus(StudyStatus.Unchecked);
-        return;
-      }
-      task.setStatus(isSolved ? StudyStatus.Solved : StudyStatus.Failed);
-      for (StepicWrappers.SolutionFile file : solutionFiles) {
-        TaskFile taskFile = task.getTaskFile(file.name);
-        if (taskFile != null) {
-          if (EduStepicConnector.setPlaceholdersFromTags(taskFile, file)) {
-            taskFile.text = removeAllTags(file.text);
-          }
-        }
-      }
+      if (!updateTask(task, isSolved)) return;
       updateSolutionTexts(project, task);
     }
     catch (IOException e) {
@@ -226,13 +217,27 @@ public class StudyCourseSynchronizer {
     }
   }
 
-  private static void updateSolutionTexts(@NotNull Project project, Task task) {
-    Course course = StudyTaskManager.getInstance(project).getCourse();
-    assert course != null;
+  private static boolean updateTask(Task task, boolean isSolved) throws IOException {
+    List<StepicWrappers.SolutionFile> solutionFiles = getLastSubmission(String.valueOf(task.getStepId()), isSolved);
+    if (solutionFiles.isEmpty()) {
+      task.setStatus(StudyStatus.Unchecked);
+      return false;
+    }
+    task.setStatus(isSolved ? StudyStatus.Solved : StudyStatus.Failed);
+    for (StepicWrappers.SolutionFile file : solutionFiles) {
+      TaskFile taskFile = task.getTaskFile(file.name);
+      if (taskFile != null) {
+        if (EduStepicConnector.setPlaceholdersFromTags(taskFile, file)) {
+          taskFile.text = removeAllTags(file.text);
+        }
+      }
+    }
+    return true;
+  }
 
+  private static void updateSolutionTexts(@NotNull Project project, @NotNull Task task) {
     VirtualFile taskDir = task.getTaskDir(project);
     if (taskDir == null) {
-      LOG.warn("Unable to find task directory");
       return;
     }
     ApplicationManager.getApplication().invokeLater(() -> ApplicationManager.getApplication().runWriteAction(() -> {

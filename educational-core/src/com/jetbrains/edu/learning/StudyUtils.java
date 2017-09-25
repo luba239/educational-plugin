@@ -308,7 +308,7 @@ public class StudyUtils {
     editor.getMarkupModel().removeAllHighlighters();
     final Project project = editor.getProject();
     if (project == null) return;
-    if (isTaskFileValid(taskFile)) return;
+    if (!isTaskFileValid(taskFile)) return;
     final StudyTaskManager taskManager = StudyTaskManager.getInstance(project);
     for (AnswerPlaceholder answerPlaceholder : taskFile.getAnswerPlaceholders()) {
       final JBColor color = taskManager.getColor(answerPlaceholder);
@@ -797,10 +797,6 @@ public class StudyUtils {
     }
 
     String actualText = text.substring(placeholder.getOffset(), end);
-    if (!actualText.equals(placeholder.getTaskText())) {
-      return false;
-    }
-
-    return true;
+    return actualText.equals(placeholder.getTaskText());
   }
 }

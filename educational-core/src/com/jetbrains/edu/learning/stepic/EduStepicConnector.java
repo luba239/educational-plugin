@@ -386,11 +386,12 @@ public class EduStepicConnector {
   }
 
   @NotNull
-  static List<StepicWrappers.SolutionFile> getLastSubmission(String stepId) throws IOException {
+  static List<StepicWrappers.SolutionFile> getLastSubmission(@NotNull String stepId, boolean isSolved) throws IOException {
     try {
       URI url = new URIBuilder(EduStepicNames.SUBMISSIONS)
         .addParameter("order", "desc")
         .addParameter("page", "1")
+        .addParameter("status", isSolved ? "correct" : "wrong")
         .addParameter("step", stepId).build();
       StepicWrappers.Submission[] submissions = getFromStepik(url.toString(), StepicWrappers.SubmissionsWrapper.class).submissions;
       if (submissions.length > 0) {
