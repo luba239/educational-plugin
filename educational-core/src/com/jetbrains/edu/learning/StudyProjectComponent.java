@@ -91,7 +91,9 @@ public class StudyProjectComponent implements ProjectComponent {
           return;
         }
 
-        loadSolutionsFromStepik(course);
+        if (StudySettings.getInstance().getUser() != null) {
+          loadSolutionsFromStepik(course);
+        }
 
         StudyUtils.registerStudyToolWindow(course, myProject);
         addStepicWidget();
