@@ -46,6 +46,7 @@ import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.editor.StudyEditorFactoryListener;
 import com.jetbrains.edu.learning.statistics.EduUsagesCollector;
+import com.jetbrains.edu.learning.stepic.EduStepicNames;
 import com.jetbrains.edu.learning.stepic.StudyStepikSolutionsLoader;
 import com.jetbrains.edu.learning.ui.StudyStepicUserWidget;
 import com.jetbrains.edu.learning.ui.StudyToolWindow;
@@ -122,6 +123,9 @@ public class StudyProjectComponent implements ProjectComponent {
   }
 
   private void loadSolutionsFromStepik(Course course) {
+    if (PropertiesComponent.getInstance(myProject).getBoolean(EduStepicNames.IS_SOLUTIONS_UPDATED_PROPERTY)) {
+      return;
+    }
     StudyStepikSolutionsLoader studyStepikSolutionsLoader = new StudyStepikSolutionsLoader(myProject);
     studyStepikSolutionsLoader.init();
     try {
