@@ -6,11 +6,15 @@ import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.edu.learning.StudyUtils;
+import com.jetbrains.edu.learning.actions.StudyRefreshTaskFileAction;
 import com.jetbrains.edu.learning.core.EduDocumentListener;
 import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +35,25 @@ public class StudyEditor extends PsiAwareTextEditorImpl {
 
   public void validateTaskFile() {
     if (!StudyUtils.isTaskFileValid(myTaskFile)) {
-      JLabel label = new JLabel("Placeholders are broken. Reset task to solve it again");
+      JLabel label = new JLabel(com.intellij.util.ui.UIUtil.toHtml("Placeholders are broken. <a href=\"\">Reset task</a> to solve it again"));
+      label.addMouseListener(new MouseAdapter() {
+        @Override
+        public void mouseClicked(MouseEvent e) {
+          if (e.getClickCount() == 1) {
+            StudyRefreshTaskFileAction.refresh(myProject);
+          }
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent e) {
+          label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e) {
+          label.setCursor(Cursor.getDefaultCursor());
+        }
+      });
       label.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
       getEditor().setHeaderComponent(label);
     }
