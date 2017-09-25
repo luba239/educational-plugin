@@ -1,6 +1,7 @@
 package com.jetbrains.edu.learning.stepic;
 
 import com.intellij.ide.SaveAndSyncHandler;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.DefaultLogger;
 import com.intellij.openapi.diagnostic.Logger;
@@ -10,6 +11,7 @@ import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBLoadingPanel;
@@ -37,7 +39,7 @@ import java.util.concurrent.Future;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getLastSubmission;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags;
 
-public class StudyCourseSynchronizer {
+public class StudyCourseSynchronizer implements Disposable {
   private static final Logger LOG = DefaultLogger.getInstance(StudyCourseSynchronizer.class);
   private static final int MAX_REQUEST_PARAMS = 100; // restriction od Stepik API for multiple requests
   private static HashMap<Task, Future> myFutures;
@@ -48,6 +50,7 @@ public class StudyCourseSynchronizer {
   public StudyCourseSynchronizer(@NotNull final Project project) {
     myProject = project;
     myBusConnection = ApplicationManager.getApplication().getMessageBus().connect();
+    Disposer.register(project, this);
   }
 
   public void init() {
@@ -258,5 +261,10 @@ public class StudyCourseSynchronizer {
         }
       }
     }));
+  }
+
+  @Override
+  public void dispose() {
+    myBusConnection.disconnect();
   }
 }
