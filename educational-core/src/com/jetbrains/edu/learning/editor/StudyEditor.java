@@ -10,6 +10,7 @@ import com.jetbrains.edu.learning.core.EduDocumentListener;
 import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import org.jetbrains.annotations.NotNull;
 
+import javax.swing.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,6 +25,19 @@ public class StudyEditor extends PsiAwareTextEditorImpl {
   public StudyEditor(@NotNull final Project project, @NotNull final VirtualFile file) {
     super(project, file, TextEditorProvider.getInstance());
     myTaskFile = StudyUtils.getTaskFile(project, file);
+
+    validateTaskFile();
+  }
+
+  public void validateTaskFile() {
+    if (!StudyUtils.isTaskFileValid(myTaskFile)) {
+      JLabel label = new JLabel("Placeholders are broken. Reset task to solve it again");
+      label.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+      getEditor().setHeaderComponent(label);
+    }
+    else {
+      getEditor().setHeaderComponent(null);
+    }
   }
 
   public TaskFile getTaskFile() {

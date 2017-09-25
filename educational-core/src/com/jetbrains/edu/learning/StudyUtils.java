@@ -780,7 +780,7 @@ public class StudyUtils {
     return true;
   }
 
-  private static boolean isTaskFileValid(TaskFile taskFile) {
+  public static boolean isTaskFileValid(TaskFile taskFile) {
     String text = taskFile.text;
     int length = text.length();
     List<AnswerPlaceholder> placeholders = taskFile.getAnswerPlaceholders();
