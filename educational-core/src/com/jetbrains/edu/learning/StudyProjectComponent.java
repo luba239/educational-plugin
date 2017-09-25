@@ -91,22 +91,7 @@ public class StudyProjectComponent implements ProjectComponent {
           return;
         }
 
-        StudyCourseSynchronizer studyCourseSynchronizer = new StudyCourseSynchronizer(myProject);
-        studyCourseSynchronizer.init();
-        try {
-          Map<Task, StudyStatus> tasksToUpdate = studyCourseSynchronizer.getTasksToUpdateUnderProgress();
-          for (Task task : tasksToUpdate.keySet()) {
-            task.setStatus(tasksToUpdate.get(task));
-          }
-          studyCourseSynchronizer.updateSolutionsUnderProgress(tasksToUpdate);
-        }
-        catch (Exception e) {
-          LOG.warn(e.getMessage());
-        }
-
-        if (!course.isAdaptive() && !course.isUpToDate()) {
-          updateAvailable(course);
-        }
+        loadSolutionsFromStepik(course);
 
         StudyUtils.registerStudyToolWindow(course, myProject);
         addStepicWidget();
@@ -132,6 +117,25 @@ public class StudyProjectComponent implements ProjectComponent {
         }
       }
     });
+  }
+
+  private void loadSolutionsFromStepik(Course course) {
+    StudyCourseSynchronizer studyCourseSynchronizer = new StudyCourseSynchronizer(myProject);
+    studyCourseSynchronizer.init();
+    try {
+      Map<Task, StudyStatus> tasksToUpdate = studyCourseSynchronizer.getTasksToUpdateUnderProgress();
+      for (Task task : tasksToUpdate.keySet()) {
+        task.setStatus(tasksToUpdate.get(task));
+      }
+      studyCourseSynchronizer.updateSolutionsUnderProgress(tasksToUpdate);
+    }
+    catch (Exception e) {
+      LOG.warn(e.getMessage());
+    }
+
+    if (!course.isAdaptive() && !course.isUpToDate()) {
+      updateAvailable(course);
+    }
   }
 
   private void addStepicWidget() {
