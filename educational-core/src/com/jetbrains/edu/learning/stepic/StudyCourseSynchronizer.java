@@ -4,6 +4,7 @@ import com.intellij.ide.SaveAndSyncHandler;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.DefaultLogger;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.editor.impl.EditorImpl;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.progress.ProgressIndicator;
@@ -161,6 +162,7 @@ public class StudyCourseSynchronizer {
 
   private void showLoadingPanel(StudyEditor studyEditor) {
     JBLoadingPanel component = studyEditor.getComponent();
+    ((EditorImpl)studyEditor.getEditor()).setViewer(true);
     component.setLoadingText("Loading solution");
     component.startLoading();
   }
@@ -174,9 +176,9 @@ public class StudyCourseSynchronizer {
           if (selectedEditor != null && mySelectedTask.getTaskFiles().containsKey(selectedEditor.getTaskFile().name)) {
             JBLoadingPanel component = selectedEditor.getComponent();
             component.stopLoading();
+            ((EditorImpl)selectedEditor.getEditor()).setViewer(false);
           }
         });
-
       }
       catch (InterruptedException | ExecutionException e) {
         LOG.warn(e.getCause());
