@@ -28,10 +28,7 @@ import com.jetbrains.edu.learning.editor.StudyEditor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -69,6 +66,29 @@ public class StudyCourseSynchronizer implements Disposable {
         if (course != null) {
           update(progressIndicator, course);
         }
+      }
+    });
+  }
+
+  public Map<Task, StudyStatus> getTasksToUpdateUnderProgress() throws Exception {
+    return ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.WithResult<Map<Task, StudyStatus>, Exception>(myProject, "Updating Task Statuses", true) {
+      @Override
+      protected Map<Task, StudyStatus> compute(@NotNull ProgressIndicator progressIndicator) throws Exception {
+        progressIndicator.setIndeterminate(true);
+        Course course = StudyTaskManager.getInstance(myProject).getCourse();
+        if (course != null) {
+          return StudyUtils.execCancelable(() -> tasksToUpdate(course));
+        }
+        return Collections.emptyMap();
+      }
+    });
+  }
+
+  public void updateSolutionsUnderProgress(Map<Task, StudyStatus> tasksToUpdate) {
+    ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(myProject, "Updating Solutions") {
+      @Override
+      public void run(@NotNull ProgressIndicator progressIndicator) {
+        updateTasks(tasksToUpdate, progressIndicator);
       }
     });
   }

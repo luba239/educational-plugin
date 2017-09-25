@@ -41,6 +41,7 @@ import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.core.EduUtils;
 import com.jetbrains.edu.learning.courseFormat.Course;
 import com.jetbrains.edu.learning.courseFormat.Lesson;
+import com.jetbrains.edu.learning.courseFormat.StudyStatus;
 import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.editor.StudyEditorFactoryListener;
@@ -92,7 +93,16 @@ public class StudyProjectComponent implements ProjectComponent {
 
         StudyCourseSynchronizer studyCourseSynchronizer = new StudyCourseSynchronizer(myProject);
         studyCourseSynchronizer.init();
-        studyCourseSynchronizer.updateUnderProgress();
+        try {
+          Map<Task, StudyStatus> tasksToUpdate = studyCourseSynchronizer.getTasksToUpdateUnderProgress();
+          for (Task task : tasksToUpdate.keySet()) {
+            task.setStatus(tasksToUpdate.get(task));
+          }
+          studyCourseSynchronizer.updateSolutionsUnderProgress(tasksToUpdate);
+        }
+        catch (Exception e) {
+          LOG.warn(e.getMessage());
+        }
 
         if (!course.isAdaptive() && !course.isUpToDate()) {
           updateAvailable(course);
