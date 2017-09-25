@@ -49,7 +49,7 @@ public class StudyTaskManager implements PersistentStateComponent<Element>, Dumb
 
   private StudyToolWindow.StudyToolWindowMode myToolWindowMode = StudyToolWindow.StudyToolWindowMode.TEXT;
   private boolean myTurnEditingMode = false;
-  private boolean myLoadSolutions = true;
+  private boolean myLoadSolutions = true; // disabled for resetted courses
 
   @Transient private final Project myProject;
 
