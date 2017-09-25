@@ -15,7 +15,7 @@ import com.jetbrains.edu.learning.courseFormat.RemoteCourse;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.navigation.StudyNavigator;
 import com.jetbrains.edu.learning.stepic.EduAdaptiveStepicConnector;
-import com.jetbrains.edu.learning.stepic.StudyCourseSynchronizer;
+import com.jetbrains.edu.learning.stepic.StudyStepikSolutionsLoader;
 import icons.EducationalCoreIcons;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,9 +41,9 @@ public class StudySyncCourseAction extends DumbAwareAction {
       updateAdaptiveCourse(project, course);
     }
     else {
-      StudyCourseSynchronizer courseSynchronizer = new StudyCourseSynchronizer(project);
+      StudyStepikSolutionsLoader courseSynchronizer = new StudyStepikSolutionsLoader(project);
       courseSynchronizer.init();
-      courseSynchronizer.updateUnderProgress();
+      courseSynchronizer.loadUnderProgress();
     }
   }
 

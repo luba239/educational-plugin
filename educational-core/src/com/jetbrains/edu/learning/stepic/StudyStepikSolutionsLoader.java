@@ -36,15 +36,15 @@ import java.util.concurrent.Future;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getLastSubmission;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags;
 
-public class StudyCourseSynchronizer implements Disposable {
-  private static final Logger LOG = DefaultLogger.getInstance(StudyCourseSynchronizer.class);
+public class StudyStepikSolutionsLoader implements Disposable {
+  private static final Logger LOG = DefaultLogger.getInstance(StudyStepikSolutionsLoader.class);
   private static final int MAX_REQUEST_PARAMS = 100; // restriction od Stepik API for multiple requests
   private static HashMap<Task, Future> myFutures;
   private final MessageBusConnection myBusConnection;
   private Project myProject;
   private Task mySelectedTask;
 
-  public StudyCourseSynchronizer(@NotNull final Project project) {
+  public StudyStepikSolutionsLoader(@NotNull final Project project) {
     myProject = project;
     myBusConnection = ApplicationManager.getApplication().getMessageBus().connect();
     Disposer.register(project, this);
@@ -58,19 +58,19 @@ public class StudyCourseSynchronizer implements Disposable {
     addFileOpenListener();
   }
 
-  public void updateUnderProgress() {
+  public void loadUnderProgress() {
     ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(myProject, "Getting Tasks to Update") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
         if (course != null) {
-          update(progressIndicator, course);
+          load(progressIndicator, course);
         }
       }
     });
   }
 
-  public Map<Task, StudyStatus> getTasksToUpdateUnderProgress() throws Exception {
+  public Map<Task, StudyStatus> tasksToUpdateUnderProgress() throws Exception {
     return ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.WithResult<Map<Task, StudyStatus>, Exception>(myProject, "Updating Task Statuses", true) {
       @Override
       protected Map<Task, StudyStatus> compute(@NotNull ProgressIndicator progressIndicator) throws Exception {
@@ -84,7 +84,7 @@ public class StudyCourseSynchronizer implements Disposable {
     });
   }
 
-  public void updateSolutionsUnderProgress(Map<Task, StudyStatus> tasksToUpdate) {
+  public void loadSolutionsUnderProgress(Map<Task, StudyStatus> tasksToUpdate) {
     ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(myProject, "Updating Solutions") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {
@@ -93,7 +93,7 @@ public class StudyCourseSynchronizer implements Disposable {
     });
   }
 
-  public void update(@NotNull ProgressIndicator progressIndicator, @NotNull Course course) {
+  public void load(@NotNull ProgressIndicator progressIndicator, @NotNull Course course) {
     Map<Task, StudyStatus> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
     updateTasks(tasksToUpdate, progressIndicator);
   }
@@ -113,7 +113,7 @@ public class StudyCourseSynchronizer implements Disposable {
       Future<?> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
         if (!progressIndicator.isCanceled()) {
           boolean isSolved = task.getStatus() == StudyStatus.Solved;
-          updateTaskSolution(myProject, task, isSolved);
+          loadSolution(myProject, task, isSolved);
         }
         countDownLatch.countDown();
       });
@@ -228,21 +228,21 @@ public class StudyCourseSynchronizer implements Disposable {
     return false;
   }
 
-  private static void updateTaskSolution(@NotNull Project project, @NotNull Task task, boolean isSolved) {
+  private static void loadSolution(@NotNull Project project, @NotNull Task task, boolean isSolved) {
     if (task instanceof TaskWithSubtasks || !EduStepicConnector.ping()) {
       return;
     }
 
     try {
-      if (!updateTask(task, isSolved)) return;
-      updateSolutionTexts(project, task);
+      if (!loadSolution(task, isSolved)) return;
+      updateFiles(project, task);
     }
     catch (IOException e) {
       LOG.warn(e.getMessage());
     }
   }
 
-  private static boolean updateTask(Task task, boolean isSolved) throws IOException {
+  private static boolean loadSolution(Task task, boolean isSolved) throws IOException {
     List<StepicWrappers.SolutionFile> solutionFiles = getLastSubmission(String.valueOf(task.getStepId()), isSolved);
     if (solutionFiles.isEmpty()) {
       task.setStatus(StudyStatus.Unchecked);
@@ -260,7 +260,7 @@ public class StudyCourseSynchronizer implements Disposable {
     return true;
   }
 
-  private static void updateSolutionTexts(@NotNull Project project, @NotNull Task task) {
+  private static void updateFiles(@NotNull Project project, @NotNull Task task) {
     VirtualFile taskDir = task.getTaskDir(project);
     if (taskDir == null) {
       return;

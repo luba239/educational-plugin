@@ -46,7 +46,7 @@ import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.editor.StudyEditorFactoryListener;
 import com.jetbrains.edu.learning.statistics.EduUsagesCollector;
-import com.jetbrains.edu.learning.stepic.StudyCourseSynchronizer;
+import com.jetbrains.edu.learning.stepic.StudyStepikSolutionsLoader;
 import com.jetbrains.edu.learning.ui.StudyStepicUserWidget;
 import com.jetbrains.edu.learning.ui.StudyToolWindow;
 import com.jetbrains.edu.learning.ui.StudyToolWindowFactory;
@@ -120,14 +120,14 @@ public class StudyProjectComponent implements ProjectComponent {
   }
 
   private void loadSolutionsFromStepik(Course course) {
-    StudyCourseSynchronizer studyCourseSynchronizer = new StudyCourseSynchronizer(myProject);
-    studyCourseSynchronizer.init();
+    StudyStepikSolutionsLoader studyStepikSolutionsLoader = new StudyStepikSolutionsLoader(myProject);
+    studyStepikSolutionsLoader.init();
     try {
-      Map<Task, StudyStatus> tasksToUpdate = studyCourseSynchronizer.getTasksToUpdateUnderProgress();
+      Map<Task, StudyStatus> tasksToUpdate = studyStepikSolutionsLoader.tasksToUpdateUnderProgress();
       for (Task task : tasksToUpdate.keySet()) {
         task.setStatus(tasksToUpdate.get(task));
       }
-      studyCourseSynchronizer.updateSolutionsUnderProgress(tasksToUpdate);
+      studyStepikSolutionsLoader.loadSolutionsUnderProgress(tasksToUpdate);
     }
     catch (Exception e) {
       LOG.warn(e.getMessage());

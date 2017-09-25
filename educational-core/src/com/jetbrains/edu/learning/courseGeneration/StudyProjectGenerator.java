@@ -29,7 +29,7 @@ import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.statistics.EduUsagesCollector;
 import com.jetbrains.edu.learning.stepic.EduStepicConnector;
 import com.jetbrains.edu.learning.stepic.StepicUser;
-import com.jetbrains.edu.learning.stepic.StudyCourseSynchronizer;
+import com.jetbrains.edu.learning.stepic.StudyStepikSolutionsLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -112,9 +112,9 @@ public class StudyProjectGenerator {
         final RemoteCourse course = EduStepicConnector.getCourse(project, selectedCourse);
         if (StudyUtils.isCourseValid(course)) {
           course.initCourse(false);
-          StudyCourseSynchronizer studyCourseSynchronizer = new StudyCourseSynchronizer(project);
-          studyCourseSynchronizer.init();
-          studyCourseSynchronizer.update(progressIndicator, course);
+          StudyStepikSolutionsLoader studyStepikSolutionsLoader = new StudyStepikSolutionsLoader(project);
+          studyStepikSolutionsLoader.init();
+          studyStepikSolutionsLoader.load(progressIndicator, course);
         }
         return course;
       });
