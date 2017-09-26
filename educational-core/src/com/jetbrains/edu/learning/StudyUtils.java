@@ -785,18 +785,13 @@ public class StudyUtils {
     int length = text.length();
     List<AnswerPlaceholder> placeholders = taskFile.getAnswerPlaceholders();
     for (AnswerPlaceholder placeholder : placeholders) {
-      if (!isPlaceholderValid(text, length, placeholder)) return false;
+      if (!isPlaceholderValid(length, placeholder)) return false;
     }
     return true;
   }
 
-  private static boolean isPlaceholderValid(String text, int length, AnswerPlaceholder placeholder) {
+  private static boolean isPlaceholderValid(int length, AnswerPlaceholder placeholder) {
     int end = placeholder.getOffset() + placeholder.getLength();
-    if (end >= length) {
-      return false;
-    }
-
-    String actualText = text.substring(placeholder.getOffset(), end);
-    return actualText.equals(placeholder.getTaskText());
+    return end < length;
   }
 }
