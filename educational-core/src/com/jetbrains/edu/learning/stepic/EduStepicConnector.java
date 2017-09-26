@@ -318,9 +318,11 @@ public class EduStepicConnector {
         StepicWrappers.StepSource step = getStep(stepId);
         StepicUser user = StudySettings.getInstance().getUser();
         StepikTaskBuilder builder = new StepikTaskBuilder(remoteCourse, step.block.name, step, stepId, user == null ? -1 : user.getId());
-        final Task task = builder.createTask(step.block.name);
-        if (task != null) {
-          lesson.addTask(task);
+        if (builder.isSupported(step.block.name)) {
+          final Task task = builder.createTask(step.block.name);
+          if (task != null) {
+            lesson.addTask(task);
+          }
         }
       }
       if (!lesson.taskList.isEmpty()) {
