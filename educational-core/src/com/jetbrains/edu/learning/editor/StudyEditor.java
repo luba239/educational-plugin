@@ -5,6 +5,7 @@ import com.intellij.openapi.fileEditor.impl.text.PsiAwareTextEditorImpl;
 import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.util.ui.UIUtil;
 import com.jetbrains.edu.learning.StudyUtils;
 import com.jetbrains.edu.learning.actions.StudyRefreshTaskFileAction;
 import com.jetbrains.edu.learning.core.EduDocumentListener;
@@ -35,7 +36,7 @@ public class StudyEditor extends PsiAwareTextEditorImpl {
 
   public void validateTaskFile() {
     if (!StudyUtils.isTaskFileValid(myTaskFile)) {
-      JLabel label = new JLabel(com.intellij.util.ui.UIUtil.toHtml("Placeholders are broken. <a href=\"\">Reset task</a> to solve it again"));
+      JLabel label = new JLabel(UIUtil.toHtml("Placeholders are broken. <a href=\"\">Reset task</a> to solve it again"));
       label.addMouseListener(new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
