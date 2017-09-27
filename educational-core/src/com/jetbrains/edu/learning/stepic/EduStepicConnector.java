@@ -397,7 +397,10 @@ public class EduStepicConnector {
         .addParameter("step", stepId).build();
       StepicWrappers.Submission[] submissions = getFromStepik(url.toString(), StepicWrappers.SubmissionsWrapper.class).submissions;
       if (submissions.length > 0) {
-        return submissions[0].reply.solution;
+        List<StepicWrappers.SolutionFile> solutionFiles = submissions[0].reply.solution;
+        if (solutionFiles != null) {
+          return solutionFiles;
+        }
       }
     }
     catch (URISyntaxException e) {
