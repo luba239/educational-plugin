@@ -124,6 +124,7 @@ public class StudyProjectComponent implements ProjectComponent {
 
   private void loadSolutionsFromStepik(Course course) {
     if (PropertiesComponent.getInstance(myProject).getBoolean(EduStepicNames.IS_SOLUTIONS_UPDATED_PROPERTY)) {
+      PropertiesComponent.getInstance(myProject).setValue(EduStepicNames.IS_SOLUTIONS_UPDATED_PROPERTY, false);
       return;
     }
     StudyStepikSolutionsLoader studyStepikSolutionsLoader = new StudyStepikSolutionsLoader(myProject);
