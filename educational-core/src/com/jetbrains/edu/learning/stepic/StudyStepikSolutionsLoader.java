@@ -200,6 +200,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
             JBLoadingPanel component = selectedEditor.getComponent();
             component.stopLoading();
             ((EditorImpl)selectedEditor.getEditor()).setViewer(false);
+            selectedEditor.validateTaskFile();
           }
         });
       }
