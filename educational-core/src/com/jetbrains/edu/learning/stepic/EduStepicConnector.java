@@ -356,12 +356,14 @@ public class EduStepicConnector {
     int lastIndex = 0;
     StringBuilder builder = new StringBuilder(solutionFile.text);
     List<AnswerPlaceholder> placeholders = taskFile.getActivePlaceholders();
+    boolean isPlaceholdersValid = true;
     for (AnswerPlaceholder placeholder : placeholders) {
       int start = builder.indexOf(OPEN_PLACEHOLDER_TAG, lastIndex);
       int end = builder.indexOf(CLOSE_PLACEHOLDER_TAG, start);
       if (start == -1 || end == -1) {
         makeInvisible(placeholder);
-        return false;
+        isPlaceholdersValid = false;
+        continue;
       }
       String placeholderText = builder.substring(start + OPEN_PLACEHOLDER_TAG.length(), end);
       placeholder.setTaskText(placeholderText);
@@ -371,7 +373,7 @@ public class EduStepicConnector {
       builder.delete(start, start + OPEN_PLACEHOLDER_TAG.length());
       lastIndex = start + placeholderText.length();
     }
-    return true;
+    return isPlaceholdersValid;
   }
 
   private static void makeInvisible(AnswerPlaceholder placeholder) {

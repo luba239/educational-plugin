@@ -792,6 +792,6 @@ public class StudyUtils {
 
   private static boolean isPlaceholderValid(int length, AnswerPlaceholder placeholder) {
     int end = placeholder.getOffset() + placeholder.getLength();
-    return end < length;
+    return placeholder.getOffset() > 0 && length > 0 && end < length;
   }
 }
