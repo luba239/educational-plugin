@@ -134,7 +134,7 @@ public class StudyProjectComponent implements ProjectComponent {
       for (Task task : tasksToUpdate.keySet()) {
         task.setStatus(tasksToUpdate.get(task));
       }
-      studyStepikSolutionsLoader.loadSolutionsUnderProgress(tasksToUpdate);
+      studyStepikSolutionsLoader.loadSolutionsInBackground(tasksToUpdate);
     }
     catch (Exception e) {
       LOG.warn(e.getMessage());

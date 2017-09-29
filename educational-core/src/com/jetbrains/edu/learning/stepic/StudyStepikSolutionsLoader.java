@@ -58,7 +58,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
     addFileOpenListener();
   }
 
-  public void loadUnderProgress() {
+  public void loadInBackground() {
     ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(myProject, "Getting Tasks to Update") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {
@@ -84,7 +84,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
     });
   }
 
-  public void loadSolutionsUnderProgress(Map<Task, StudyStatus> tasksToUpdate) {
+  public void loadSolutionsInBackground(Map<Task, StudyStatus> tasksToUpdate) {
     ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(myProject, "Updating Solutions") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {

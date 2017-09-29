@@ -43,7 +43,7 @@ public class StudySyncCourseAction extends DumbAwareAction {
     else {
       StudyStepikSolutionsLoader courseSynchronizer = new StudyStepikSolutionsLoader(project);
       courseSynchronizer.init();
-      courseSynchronizer.loadUnderProgress();
+      courseSynchronizer.loadInBackground();
     }
   }
 
