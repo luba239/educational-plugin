@@ -39,7 +39,7 @@ import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags
 public class StudyStepikSolutionsLoader implements Disposable {
   private static final Logger LOG = DefaultLogger.getInstance(StudyStepikSolutionsLoader.class);
   private static final int MAX_REQUEST_PARAMS = 100; // restriction od Stepik API for multiple requests
-  private static HashMap<Task, Future> myFutures;
+  private static HashMap<Integer, Future> myFutures;
   private final MessageBusConnection myBusConnection;
   private Project myProject;
   private Task mySelectedTask;
@@ -117,7 +117,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
         }
         countDownLatch.countDown();
       });
-      myFutures.put(task, future);
+      myFutures.put(task.getStepId(), future);
     }
 
     if (mySelectedTask != null && tasksToUpdate.containsKey(mySelectedTask)) {
@@ -125,7 +125,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
       assert selectedStudyEditor != null;
       ApplicationManager.getApplication().invokeLater(() -> {
         showLoadingPanel(selectedStudyEditor);
-        waitUntilTaskUpdatesAndEnableEditor(myFutures.get(mySelectedTask));
+        waitUntilTaskUpdatesAndEnableEditor(myFutures.get(mySelectedTask.getStepId()));
       });
     }
 
@@ -171,9 +171,9 @@ public class StudyStepikSolutionsLoader implements Disposable {
         if (studyEditor != null && taskFile != null) {
           mySelectedTask = taskFile.getTask();
           Task task = taskFile.getTask();
-          if (myFutures != null && myFutures.containsKey(task)) {
+          if (myFutures != null && myFutures.containsKey(task.getStepId())) {
             showLoadingPanel(studyEditor);
-            Future future = myFutures.get(task);
+            Future future = myFutures.get(task.getStepId());
             if (!future.isDone() || !future.isCancelled()) {
               waitUntilTaskUpdatesAndEnableEditor(future);
             }
