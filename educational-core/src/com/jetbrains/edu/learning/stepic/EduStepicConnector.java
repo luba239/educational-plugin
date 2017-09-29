@@ -361,7 +361,7 @@ public class EduStepicConnector {
       int start = builder.indexOf(OPEN_PLACEHOLDER_TAG, lastIndex);
       int end = builder.indexOf(CLOSE_PLACEHOLDER_TAG, start);
       if (start == -1 || end == -1) {
-        makeInvisible(placeholder);
+        markInvalid(placeholder);
         isPlaceholdersValid = false;
         continue;
       }
@@ -376,7 +376,7 @@ public class EduStepicConnector {
     return isPlaceholdersValid;
   }
 
-  private static void makeInvisible(AnswerPlaceholder placeholder) {
+  private static void markInvalid(AnswerPlaceholder placeholder) {
     placeholder.setLength(0);
     placeholder.setOffset(0);
   }
