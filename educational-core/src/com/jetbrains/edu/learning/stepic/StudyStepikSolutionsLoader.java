@@ -125,7 +125,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
       StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
       assert selectedStudyEditor != null;
       ApplicationManager.getApplication().invokeLater(() -> {
-        showLoadingPanel(selectedStudyEditor);
+        selectedStudyEditor.showLoadingPanel();
         waitUntilTaskUpdatesAndEnableEditor(myFutures.get(mySelectedTask.getStepId()));
       });
     }
@@ -180,7 +180,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
           mySelectedTask = taskFile.getTask();
           Task task = taskFile.getTask();
           if (myFutures != null && myFutures.containsKey(task.getStepId())) {
-            showLoadingPanel(studyEditor);
+            studyEditor.showLoadingPanel();
             Future future = myFutures.get(task.getStepId());
             if (!future.isDone() || !future.isCancelled()) {
               waitUntilTaskUpdatesAndEnableEditor(future);
@@ -189,13 +189,6 @@ public class StudyStepikSolutionsLoader implements Disposable {
         }
       }
     });
-  }
-
-  private void showLoadingPanel(StudyEditor studyEditor) {
-    JBLoadingPanel component = studyEditor.getComponent();
-    ((EditorImpl)studyEditor.getEditor()).setViewer(true);
-    component.setLoadingText("Loading solution");
-    component.startLoading();
   }
 
   private void waitUntilTaskUpdatesAndEnableEditor(Future future) {
