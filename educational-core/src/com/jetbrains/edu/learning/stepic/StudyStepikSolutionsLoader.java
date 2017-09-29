@@ -111,14 +111,14 @@ public class StudyStepikSolutionsLoader implements Disposable {
       Task task = taskStudyStatusEntry.getKey();
       StudyStatus status = taskStudyStatusEntry.getValue();
       task.setStatus(status);
-      Future<?> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
-        if (!progressIndicator.isCanceled()) {
+      if (!progressIndicator.isCanceled()) {
+          Future<?> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
           boolean isSolved = task.getStatus() == StudyStatus.Solved;
           loadSolution(myProject, task, isSolved);
-        }
-        countDownLatch.countDown();
-      });
-      myFutures.put(task.getStepId(), future);
+        });
+        myFutures.put(task.getStepId(), future);
+      }
+      countDownLatch.countDown();
     }
 
     if (mySelectedTask != null && tasksToUpdate.containsKey(mySelectedTask)) {
