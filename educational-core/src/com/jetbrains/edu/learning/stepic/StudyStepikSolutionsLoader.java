@@ -39,7 +39,7 @@ import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags
 public class StudyStepikSolutionsLoader implements Disposable {
   private static final Logger LOG = DefaultLogger.getInstance(StudyStepikSolutionsLoader.class);
   private static final int MAX_REQUEST_PARAMS = 100; // restriction od Stepik API for multiple requests
-  private static HashMap<Integer, Future> myFutures;
+  private static HashMap<Integer, Future> myFutures = new HashMap<>();
   private final MessageBusConnection myBusConnection;
   private Project myProject;
   private Task mySelectedTask;
@@ -99,7 +99,8 @@ public class StudyStepikSolutionsLoader implements Disposable {
   }
 
   private void updateTasks(Map<Task, StudyStatus> tasksToUpdate, ProgressIndicator progressIndicator) {
-    myFutures = new HashMap<>();
+    cancelUnfinishedTasks();
+    myFutures.clear();
 
     if (tasksToUpdate == null) {
       LOG.warn("Can't get a list of tasks to update");
@@ -136,6 +137,13 @@ public class StudyStepikSolutionsLoader implements Disposable {
     }
     catch (InterruptedException e) {
       LOG.warn(e.getCause());
+    }
+  }
+
+  private void cancelUnfinishedTasks() {
+    for (Future future : myFutures.values()) {
+      if (!future.isDone())
+      future.cancel(true);
     }
   }
 
