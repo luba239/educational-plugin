@@ -73,7 +73,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
   public Map<Task, StudyStatus> tasksToUpdateUnderProgress() throws Exception {
     return ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.WithResult<Map<Task, StudyStatus>, Exception>(myProject, "Updating Task Statuses", true) {
       @Override
-      protected Map<Task, StudyStatus> compute(@NotNull ProgressIndicator progressIndicator) throws Exception {
+      protected Map<Task, StudyStatus> compute(@NotNull ProgressIndicator progressIndicator) {
         progressIndicator.setIndeterminate(true);
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
         if (course != null) {
