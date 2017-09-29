@@ -113,7 +113,7 @@ public class StudyProjectGenerator {
           StudyStepikSolutionsLoader studyStepikSolutionsLoader = new StudyStepikSolutionsLoader(project);
           studyStepikSolutionsLoader.init();
           studyStepikSolutionsLoader.load(progressIndicator, course);
-          PropertiesComponent.getInstance(project).setValue(EduStepicNames.IS_SOLUTIONS_UPDATED_PROPERTY, true, false);
+          PropertiesComponent.getInstance(project).setValue(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY, true, false);
         }
         return course;
       });
