@@ -38,7 +38,7 @@ import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags
 
 public class StudyStepikSolutionsLoader implements Disposable {
   private static final Logger LOG = DefaultLogger.getInstance(StudyStepikSolutionsLoader.class);
-  private static final int MAX_REQUEST_PARAMS = 100; // restriction od Stepik API for multiple requests
+  private static final int MAX_REQUEST_PARAMS = 100; // restriction of Stepik API for multiple requests
   private static HashMap<Integer, Future> myFutures = new HashMap<>();
   private final MessageBusConnection myBusConnection;
   private Project myProject;
