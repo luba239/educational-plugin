@@ -643,7 +643,7 @@ public class EduStepicConnector {
     return false;
   }
 
-  public static void updateCourse(Project project) {
+  public static void updateCourse(@NotNull Project project) {
     final Course currentCourse = StudyTaskManager.getInstance(project).getCourse();
     if (currentCourse == null || !(currentCourse instanceof RemoteCourse)) return;
     final Course course = getCourse(project, (RemoteCourse)currentCourse);
