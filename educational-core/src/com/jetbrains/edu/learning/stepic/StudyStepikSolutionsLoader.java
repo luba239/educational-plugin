@@ -10,6 +10,8 @@ import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.progress.Task.Backgroundable;
+import com.intellij.openapi.progress.Task.WithResult;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vfs.VfsUtil;
@@ -59,7 +61,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
   }
 
   public void loadInBackground() {
-    ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(myProject, "Getting Tasks to Update") {
+    ProgressManager.getInstance().run(new Backgroundable(myProject, "Getting Tasks to Update") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
@@ -71,7 +73,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
   }
 
   public Map<Task, StudyStatus> tasksToUpdateUnderProgress() throws Exception {
-    return ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.WithResult<Map<Task, StudyStatus>, Exception>(myProject, "Updating Task Statuses", true) {
+    return ProgressManager.getInstance().run(new WithResult<Map<Task, StudyStatus>, Exception>(myProject, "Updating Task Statuses", true) {
       @Override
       protected Map<Task, StudyStatus> compute(@NotNull ProgressIndicator progressIndicator) {
         progressIndicator.setIndeterminate(true);
@@ -85,7 +87,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
   }
 
   public void loadSolutionsInBackground(Map<Task, StudyStatus> tasksToUpdate) {
-    ProgressManager.getInstance().run(new com.intellij.openapi.progress.Task.Backgroundable(myProject, "Updating Solutions") {
+    ProgressManager.getInstance().run(new Backgroundable(myProject, "Updating Solutions") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {
         updateTasks(tasksToUpdate, progressIndicator);
