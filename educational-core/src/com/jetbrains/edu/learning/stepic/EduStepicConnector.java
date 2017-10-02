@@ -360,14 +360,13 @@ public class EduStepicConnector {
     for (AnswerPlaceholder placeholder : placeholders) {
       int start = builder.indexOf(OPEN_PLACEHOLDER_TAG, lastIndex);
       int end = builder.indexOf(CLOSE_PLACEHOLDER_TAG, start);
+      placeholder.setOffset(start);
       if (start == -1 || end == -1) {
-        markInvalid(placeholder);
         isPlaceholdersValid = false;
         continue;
       }
       String placeholderText = builder.substring(start + OPEN_PLACEHOLDER_TAG.length(), end);
       placeholder.setTaskText(placeholderText);
-      placeholder.setOffset(start);
       placeholder.setLength(placeholderText.length());
       builder.delete(end, end + CLOSE_PLACEHOLDER_TAG.length());
       builder.delete(start, start + OPEN_PLACEHOLDER_TAG.length());
@@ -377,8 +376,8 @@ public class EduStepicConnector {
   }
 
   private static void markInvalid(AnswerPlaceholder placeholder) {
-    placeholder.setLength(0);
-    placeholder.setOffset(0);
+    placeholder.setLength(-1);
+    placeholder.setOffset(-1);
   }
 
   static String removeAllTags(@NotNull String text) {
