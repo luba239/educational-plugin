@@ -74,7 +74,7 @@ public class StudySyncCourseAction extends DumbAwareAction {
     }, "Synchronizing Course", true, project);
   }
 
-  public static boolean isVisible(@Nullable Project project) {
+  public static boolean isAvailable(@Nullable Project project) {
     if (project == null) {
       return false;
     }
@@ -93,7 +93,7 @@ public class StudySyncCourseAction extends DumbAwareAction {
 
   @Override
   public void update(AnActionEvent e) {
-    boolean visible = isVisible(e.getProject());
+    boolean visible = isAvailable(e.getProject());
     Presentation presentation = e.getPresentation();
     presentation.setEnabledAndVisible(visible);
   }
