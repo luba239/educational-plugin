@@ -30,6 +30,7 @@ import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.courseFormat.*;
 import com.jetbrains.edu.learning.courseFormat.tasks.*;
 import com.jetbrains.edu.learning.navigation.StudyNavigator;
+import com.jetbrains.edu.learning.ui.StudyToolWindow;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.config.RequestConfig;
@@ -54,11 +55,11 @@ import java.util.concurrent.TimeUnit;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getStep;
 
 public class EduAdaptiveStepicConnector {
-  private static final String PYCHARM_COMMENT = " Posted from PyCharm Edu\n";
-  static final int NEXT_RECOMMENDATION_REACTION = 2;
-  static final int TOO_HARD_RECOMMENDATION_REACTION = 0;
-  static final int TOO_BORING_RECOMMENDATION_REACTION = -1;
-  static final String LOADING_NEXT_RECOMMENDATION = "Loading Next Recommendation";
+  public static final String PYCHARM_COMMENT = " Posted from PyCharm Edu\n";
+  public static final int NEXT_RECOMMENDATION_REACTION = 2;
+  public static final int TOO_HARD_RECOMMENDATION_REACTION = 0;
+  public static final int TOO_BORING_RECOMMENDATION_REACTION = -1;
+  public static final String LOADING_NEXT_RECOMMENDATION = "Loading Next Recommendation";
   private static final Logger LOG = Logger.getInstance(EduAdaptiveStepicConnector.class);
   private static final int CONNECTION_TIMEOUT = 60 * 1000;
 
@@ -197,7 +198,7 @@ public class EduAdaptiveStepicConnector {
     request.setConfig(requestConfig);
   }
 
-  private static boolean postRecommendationReaction(@NotNull String lessonId, @NotNull String user, int reaction) {
+  public static boolean postRecommendationReaction(@NotNull String lessonId, @NotNull String user, int reaction) {
     final HttpPost post = new HttpPost(EduStepicNames.STEPIC_API_URL + EduStepicNames.RECOMMENDATION_REACTIONS_URL);
     final String json = new Gson()
       .toJson(new StepicWrappers.RecommendationReactionWrapper(new StepicWrappers.RecommendationReaction(reaction, user, lessonId)));
@@ -225,10 +226,10 @@ public class EduAdaptiveStepicConnector {
     }
   }
 
-  static void addNextRecommendedTask(@NotNull Project project,
-                                     @NotNull Lesson lesson,
-                                     @NotNull ProgressIndicator indicator,
-                                     int reactionToPost) {
+  public static void addNextRecommendedTask(@NotNull Project project,
+                                            @NotNull Lesson lesson,
+                                            @NotNull ProgressIndicator indicator,
+                                            int reactionToPost) {
     final Course course = StudyTaskManager.getInstance(project).getCourse();
     if (!(course instanceof RemoteCourse)) {
       LOG.warn("Course is in incorrect state");
@@ -264,7 +265,7 @@ public class EduAdaptiveStepicConnector {
     task.initTask(lesson, false);
     boolean replaceCurrentTask = reactionToPost == TOO_HARD_RECOMMENDATION_REACTION || reactionToPost == TOO_BORING_RECOMMENDATION_REACTION;
     if (replaceCurrentTask) {
-      replaceCurrentTask(project, task, lesson, lesson.taskList.size() - 1);
+      replaceCurrentTask(project, task, lesson);
     }
     else {
       addAsNextTask(project, task, lesson);
@@ -308,21 +309,21 @@ public class EduAdaptiveStepicConnector {
     }));
   }
 
-  public static void replaceCurrentTask(@NotNull Project project, @NotNull Task task, @NotNull Lesson lesson, int taskIndex) {
+  public static void replaceCurrentTask(@NotNull Project project, @NotNull Task task, @NotNull Lesson lesson) {
     Course course = StudyTaskManager.getInstance(project).getCourse();
     assert course != null;
+
+    int taskIndex = lesson.getTaskList().size();
 
     task.setIndex(taskIndex);
     lesson.getTaskList().set(taskIndex - 1, task);
 
     final String lessonName = EduNames.LESSON + lesson.getIndex();
     updateProjectFiles(project, task, lessonName, course.getLanguageById());
+    setToolWindowText(project, task);
   }
 
-  private static void updateProjectFiles(@NotNull Project project,
-                                         @NotNull Task task,
-                                         @NotNull String lessonName,
-                                         @NotNull Language language) {
+  private static void updateProjectFiles(@NotNull Project project, @NotNull Task task, @NotNull String lessonName, Language language) {
     final VirtualFile lessonDir = project.getBaseDir().findChild(lessonName);
     if (lessonDir == null) {
       return;
@@ -352,6 +353,13 @@ public class EduAdaptiveStepicConnector {
     }
 
     taskDir.delete(EduAdaptiveStepicConnector.class);
+  }
+
+  private static void setToolWindowText(@NotNull Project project, @NotNull Task task) {
+    final StudyToolWindow window = StudyUtils.getStudyToolWindow(project);
+    if (window != null) {
+      window.setTaskText(task.getTaskDescription(), project);
+    }
   }
 
   private static String getCodeTemplateForTask(@NotNull Language language,
@@ -592,16 +600,16 @@ public class EduAdaptiveStepicConnector {
     private final Language myLanguage;
     private StepicWrappers.Step myStep;
     private final Map<String, Computable<Task>> taskTypes = ImmutableMap.of(
-      "code", this::codeTask,
-      "choice", this::choiceTask,
-      "text", this::theoryTask,
-      "task", this::pycharmTask
+      "code", () -> codeTask(),
+      "choice", () -> choiceTask(),
+      "text", () -> theoryTask(),
+      "task", () -> pycharmTask()
     );
 
-    StepikTaskBuilder(@NotNull RemoteCourse course,
-                      @NotNull String name,
-                      @NotNull StepicWrappers.StepSource step,
-                      int stepId, int userId) {
+    public StepikTaskBuilder(@NotNull RemoteCourse course,
+                             @NotNull String name,
+                             @NotNull StepicWrappers.StepSource step,
+                             int stepId, int userId) {
       myName = name;
       myStep = step.block;
       myStepId = stepId;
@@ -610,11 +618,11 @@ public class EduAdaptiveStepicConnector {
     }
 
     @Nullable
-    Task createTask(String type) {
+    public Task createTask(String type) {
       return taskTypes.get(type).compute();
     }
 
-    boolean isSupported(String type) {
+    public boolean isSupported(String type) {
       return taskTypes.containsKey(type);
     }
 
