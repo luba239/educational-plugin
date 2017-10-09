@@ -80,7 +80,7 @@
         </action>
 
         <action id="Educational.ResetCourse" popup="true" class="com.jetbrains.edu.learning.actions.StudyResetCourseAction">
-            <add-to-group group-id="ProjectViewPopupMenu" anchor="before" relative-to-action="CutCopyPasteGroup"/>
+            <add-to-group group-id="HelpMenu" anchor="before" relative-to-action="HelpTopics"/>
         </action>
 
         <action id="Educational.BrowseCourses" class="com.jetbrains.edu.learning.newproject.EduBrowseCoursesAction">
