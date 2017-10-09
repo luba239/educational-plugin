@@ -188,6 +188,7 @@
         <typedHandler implementation="com.jetbrains.edu.learning.StudyTypeHandlerDelegate"
                       order="first, before completionAutoPopup"/>
         <httpRequestHandler implementation="com.jetbrains.edu.learning.builtInServer.EduStepikRestService"/>
+        <projectService serviceImplementation="com.jetbrains.edu.learning.stepic.StudyStepikSolutionsLoader" />
 
         <!--for educators-->
         <projectService serviceImplementation="com.jetbrains.edu.coursecreator.CCProjectService"/>

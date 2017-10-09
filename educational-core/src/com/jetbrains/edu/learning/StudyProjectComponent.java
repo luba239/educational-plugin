@@ -127,7 +127,7 @@ public class StudyProjectComponent implements ProjectComponent {
       PropertiesComponent.getInstance(myProject).setValue(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY, false);
       return;
     }
-    StudyStepikSolutionsLoader studyStepikSolutionsLoader = new StudyStepikSolutionsLoader(myProject);
+    StudyStepikSolutionsLoader studyStepikSolutionsLoader = StudyStepikSolutionsLoader.getInstance(myProject);
     studyStepikSolutionsLoader.init();
     try {
       Map<Task, StudyStatus> tasksToUpdate = studyStepikSolutionsLoader.tasksToUpdateUnderProgress();

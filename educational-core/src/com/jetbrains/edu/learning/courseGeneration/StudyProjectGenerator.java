@@ -108,7 +108,7 @@ public class StudyProjectGenerator {
         final RemoteCourse course = EduStepicConnector.getCourse(project, selectedCourse);
         if (StudyUtils.isCourseValid(course)) {
           course.initCourse(false);
-          StudyStepikSolutionsLoader studyStepikSolutionsLoader = new StudyStepikSolutionsLoader(project);
+          StudyStepikSolutionsLoader studyStepikSolutionsLoader = StudyStepikSolutionsLoader.getInstance(project);
           studyStepikSolutionsLoader.init();
           studyStepikSolutionsLoader.load(progressIndicator, course);
           PropertiesComponent.getInstance(project).setValue(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY, true, false);

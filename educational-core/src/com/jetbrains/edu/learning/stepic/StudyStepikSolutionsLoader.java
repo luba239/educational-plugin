@@ -1,8 +1,9 @@
 package com.jetbrains.edu.learning.stepic;
 
 import com.intellij.ide.SaveAndSyncHandler;
-import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.components.AbstractProjectComponent;
+import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.diagnostic.DefaultLogger;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.impl.EditorImpl;
@@ -13,7 +14,6 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task.Backgroundable;
 import com.intellij.openapi.progress.Task.WithResult;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBLoadingPanel;
@@ -38,18 +38,20 @@ import java.util.concurrent.Future;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getLastSubmission;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags;
 
-public class StudyStepikSolutionsLoader implements Disposable {
+public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
   private static final Logger LOG = DefaultLogger.getInstance(StudyStepikSolutionsLoader.class);
   private static final int MAX_REQUEST_PARAMS = 100; // restriction of Stepik API for multiple requests
-  private static HashMap<Integer, Future> myFutures = new HashMap<>();
   private final MessageBusConnection myBusConnection;
-  private Project myProject;
+  private final HashMap<Integer, Future> myFutures = new HashMap<>();
   private Task mySelectedTask;
 
-  public StudyStepikSolutionsLoader(@NotNull final Project project) {
-    myProject = project;
+  protected StudyStepikSolutionsLoader(@NotNull final Project project) {
+    super(project);
     myBusConnection = ApplicationManager.getApplication().getMessageBus().connect();
-    Disposer.register(project, this);
+  }
+
+  public static StudyStepikSolutionsLoader getInstance(Project project) {
+    return ServiceManager.getService(project, StudyStepikSolutionsLoader.class);
   }
 
   public void init() {
@@ -72,6 +74,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
     });
   }
 
+  @NotNull
   public Map<Task, StudyStatus> tasksToUpdateUnderProgress() throws Exception {
     return ProgressManager.getInstance().run(new WithResult<Map<Task, StudyStatus>, Exception>(myProject, "Updating Task Statuses", true) {
       @Override
@@ -86,7 +89,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
     });
   }
 
-  public void loadSolutionsInBackground(Map<Task, StudyStatus> tasksToUpdate) {
+  public void loadSolutionsInBackground(@NotNull Map<Task, StudyStatus> tasksToUpdate) {
     ProgressManager.getInstance().run(new Backgroundable(myProject, "Updating Solutions") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {
@@ -97,17 +100,18 @@ public class StudyStepikSolutionsLoader implements Disposable {
 
   public void load(@NotNull ProgressIndicator progressIndicator, @NotNull Course course) {
     Map<Task, StudyStatus> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
-    updateTasks(tasksToUpdate, progressIndicator);
+    if (tasksToUpdate != null) {
+      updateTasks(tasksToUpdate, progressIndicator);
+    }
+    else {
+      LOG.warn("Can't get a list of tasks to update");
+    }
   }
 
-  private void updateTasks(Map<Task, StudyStatus> tasksToUpdate, ProgressIndicator progressIndicator) {
+  private void updateTasks(@NotNull Map<Task, StudyStatus> tasksToUpdate, @NotNull ProgressIndicator progressIndicator) {
     cancelUnfinishedTasks();
     myFutures.clear();
 
-    if (tasksToUpdate == null) {
-      LOG.warn("Can't get a list of tasks to update");
-      return;
-    }
     CountDownLatch countDownLatch = new CountDownLatch(tasksToUpdate.size());
     for (Map.Entry<Task, StudyStatus> taskStudyStatusEntry : tasksToUpdate.entrySet()) {
       Task task = taskStudyStatusEntry.getKey();
@@ -123,14 +127,14 @@ public class StudyStepikSolutionsLoader implements Disposable {
       countDownLatch.countDown();
     }
 
-    if (mySelectedTask != null && tasksToUpdate.containsKey(mySelectedTask)) {
-      StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
-      assert selectedStudyEditor != null;
-      ApplicationManager.getApplication().invokeLater(() -> {
+    ApplicationManager.getApplication().invokeLater(() -> {
+      if (mySelectedTask != null && tasksToUpdate.containsKey(mySelectedTask)) {
+        StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
+        assert selectedStudyEditor != null;
         selectedStudyEditor.showLoadingPanel();
         waitUntilTaskUpdatesAndEnableEditor(myFutures.get(mySelectedTask.getStepId()));
-      });
-    }
+      }
+    });
 
     try {
       countDownLatch.await();
@@ -144,8 +148,9 @@ public class StudyStepikSolutionsLoader implements Disposable {
 
   private void cancelUnfinishedTasks() {
     for (Future future : myFutures.values()) {
-      if (!future.isDone())
-      future.cancel(true);
+      if (!future.isDone()) {
+        future.cancel(true);
+      }
     }
   }
 
@@ -193,7 +198,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
     });
   }
 
-  private void waitUntilTaskUpdatesAndEnableEditor(Future future) {
+  private void waitUntilTaskUpdatesAndEnableEditor(@NotNull Future future) {
     ApplicationManager.getApplication().executeOnPooledThread(() -> {
       try {
         future.get();
@@ -246,7 +251,7 @@ public class StudyStepikSolutionsLoader implements Disposable {
     }
   }
 
-  private static boolean loadSolution(Task task, boolean isSolved) throws IOException {
+  private static boolean loadSolution(@NotNull Task task, boolean isSolved) throws IOException {
     List<StepicWrappers.SolutionFile> solutionFiles = getLastSubmission(String.valueOf(task.getStepId()), isSolved);
     if (solutionFiles.isEmpty()) {
       task.setStatus(StudyStatus.Unchecked);
@@ -258,6 +263,9 @@ public class StudyStepikSolutionsLoader implements Disposable {
       if (taskFile != null) {
         if (EduStepicConnector.setPlaceholdersFromTags(taskFile, file)) {
           taskFile.text = removeAllTags(file.text);
+        }
+        else {
+          taskFile.text = file.text;
         }
       }
     }
@@ -288,7 +296,8 @@ public class StudyStepikSolutionsLoader implements Disposable {
   }
 
   @Override
-  public void dispose() {
+  public void disposeComponent() {
     myBusConnection.disconnect();
+    cancelUnfinishedTasks();
   }
 }

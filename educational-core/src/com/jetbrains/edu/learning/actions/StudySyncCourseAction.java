@@ -41,7 +41,7 @@ public class StudySyncCourseAction extends DumbAwareAction {
       updateAdaptiveCourse(project, course);
     }
     else {
-      StudyStepikSolutionsLoader courseSynchronizer = new StudyStepikSolutionsLoader(project);
+      StudyStepikSolutionsLoader courseSynchronizer = StudyStepikSolutionsLoader.getInstance(project);
       courseSynchronizer.init();
       courseSynchronizer.loadInBackground();
     }
