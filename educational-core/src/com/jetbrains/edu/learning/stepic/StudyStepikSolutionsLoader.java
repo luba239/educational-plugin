@@ -41,13 +41,12 @@ import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags
 public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
   private static final Logger LOG = DefaultLogger.getInstance(StudyStepikSolutionsLoader.class);
   private static final int MAX_REQUEST_PARAMS = 100; // restriction of Stepik API for multiple requests
-  private final MessageBusConnection myBusConnection;
   private final HashMap<Integer, Future> myFutures = new HashMap<>();
+  private MessageBusConnection myBusConnection;
   private Task mySelectedTask;
 
   protected StudyStepikSolutionsLoader(@NotNull final Project project) {
     super(project);
-    myBusConnection = ApplicationManager.getApplication().getMessageBus().connect();
   }
 
   public static StudyStepikSolutionsLoader getInstance(Project project) {
@@ -178,6 +177,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
   }
 
   private void addFileOpenListener() {
+    myBusConnection = ApplicationManager.getApplication().getMessageBus().connect();
     myBusConnection.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, new FileEditorManagerListener() {
       @Override
       public void fileOpened(@NotNull FileEditorManager source, @NotNull VirtualFile file) {
