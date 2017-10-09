@@ -70,7 +70,7 @@ public class PyEduPluginConfigurator implements EduPluginConfigurator {
       if (taskDirectory.isNull()) return;
 
       if (StudyUtils.isStudentProject(project) && !task.getTaskFiles().isEmpty()) {
-        createTaskFilesFromText(task, taskDirectory.get());
+        createFilesFromText(task, taskDirectory.get());
       }
       else {
         createFilesFromTemplates(project, view, taskDirectory.get());
@@ -79,7 +79,7 @@ public class PyEduPluginConfigurator implements EduPluginConfigurator {
     return taskDirectory.get();
   }
 
-  private static void createTaskFilesFromText(@NotNull Task task, @Nullable PsiDirectory taskDirectory) {
+  private static void createFilesFromText(@NotNull Task task, @Nullable PsiDirectory taskDirectory) {
     if (taskDirectory == null) {
       LOG.warn("Task directory is null. Cannot create task files");
       return;
