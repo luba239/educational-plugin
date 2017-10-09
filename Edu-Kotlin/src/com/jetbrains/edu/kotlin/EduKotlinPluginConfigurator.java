@@ -1,6 +1,5 @@
 package com.jetbrains.edu.kotlin;
 
-import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.externalSystem.model.ProjectSystemId;
@@ -15,7 +14,6 @@ import com.intellij.util.PathUtil;
 import com.intellij.util.containers.ContainerUtil;
 import com.jetbrains.edu.learning.StudyUtils;
 import com.jetbrains.edu.learning.actions.StudyFillPlaceholdersAction;
-import com.jetbrains.edu.learning.actions.StudyShowHintAction;
 import com.jetbrains.edu.learning.checker.StudyTaskChecker;
 import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.core.EduUtils;
@@ -76,7 +74,6 @@ public class EduKotlinPluginConfigurator extends EduPluginConfiguratorBase {
   @Override
   public DefaultActionGroup getTaskDescriptionActionGroup() {
     DefaultActionGroup taskDescriptionActionGroup = super.getTaskDescriptionActionGroup();
-    taskDescriptionActionGroup.remove(ActionManager.getInstance().getAction(StudyShowHintAction.ACTION_ID));
     StudyFillPlaceholdersAction fillPlaceholdersAction = new StudyFillPlaceholdersAction();
     fillPlaceholdersAction.getTemplatePresentation().setIcon(EduKotlinIcons.FILL_PLACEHOLDERS_ICON);
     fillPlaceholdersAction.getTemplatePresentation().setText("Fill Answer Placeholders");
