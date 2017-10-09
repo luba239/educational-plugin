@@ -17,6 +17,7 @@ import com.jetbrains.edu.learning.courseFormat.StudyStatus;
 import com.jetbrains.edu.learning.courseFormat.TaskFile;
 import com.jetbrains.edu.learning.courseFormat.tasks.PyCharmTask;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
+import com.jetbrains.edu.learning.editor.StudyEditor;
 import com.jetbrains.edu.learning.stepic.EduStepicConnector;
 import com.jetbrains.edu.learning.stepic.StepicUser;
 import one.util.streamex.EntryStream;
@@ -42,7 +43,7 @@ public class PyStudyTaskChecker extends StudyTaskChecker<PyCharmTask> {
     }
 
     if (!StudyUtils.isTaskValid(myTask)) {
-      return new StudyCheckResult(StudyStatus.Unchecked, "Task is broken. Refresh to check");
+      return new StudyCheckResult(StudyStatus.Unchecked, StudyEditor.BROKEN_SOLUTION_ERROR_TEXT);
     }
     CountDownLatch latch = new CountDownLatch(1);
     ApplicationManager.getApplication()

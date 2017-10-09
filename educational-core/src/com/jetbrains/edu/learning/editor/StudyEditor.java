@@ -26,6 +26,7 @@ import java.util.Map;
  * also @see {@link StudyFileEditorProvider}
  */
 public class StudyEditor extends PsiAwareTextEditorImpl {
+  public static final String BROKEN_SOLUTION_ERROR_TEXT = "Solution can't be loaded. <a href=\"\">Reset task</a> to solve it again";
   private final TaskFile myTaskFile;
   private static final Map<Document, EduDocumentListener> myDocumentListeners = new HashMap<>();
 
@@ -38,7 +39,7 @@ public class StudyEditor extends PsiAwareTextEditorImpl {
 
   public void validateTaskFile() {
     if (!StudyUtils.isTaskFileValid(myTaskFile)) {
-      JLabel label = new JLabel(UIUtil.toHtml("Placeholders are broken. <a href=\"\">Reset task</a> to solve it again"));
+      JLabel label = new JLabel(UIUtil.toHtml(BROKEN_SOLUTION_ERROR_TEXT));
       label.addMouseListener(new MouseAdapter() {
         @Override
         public void mouseClicked(MouseEvent e) {
