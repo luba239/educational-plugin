@@ -132,7 +132,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
         StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
         assert selectedStudyEditor != null;
         selectedStudyEditor.showLoadingPanel();
-        waitUntilTaskUpdatesAndEnableEditor(myFutures.get(mySelectedTask.getStepId()));
+        enableEditorWhenFutureDone(myFutures.get(mySelectedTask.getStepId()));
       }
     });
 
@@ -190,7 +190,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
             studyEditor.showLoadingPanel();
             Future future = myFutures.get(task.getStepId());
             if (!future.isDone() || !future.isCancelled()) {
-              waitUntilTaskUpdatesAndEnableEditor(future);
+              enableEditorWhenFutureDone(future);
             }
           }
         }
@@ -198,7 +198,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
     });
   }
 
-  private void waitUntilTaskUpdatesAndEnableEditor(@NotNull Future future) {
+  private void enableEditorWhenFutureDone(@NotNull Future future) {
     ApplicationManager.getApplication().executeOnPooledThread(() -> {
       try {
         future.get();
