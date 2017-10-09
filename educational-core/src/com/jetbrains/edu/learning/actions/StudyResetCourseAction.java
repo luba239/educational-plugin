@@ -37,7 +37,9 @@ public class StudyResetCourseAction extends DumbAwareAction {
     assert course != null;
 
     removeAllLessons(project, course);
-    studyTaskManager.setMyLoadSolutions(false);
+    if (course instanceof RemoteCourse) {
+      ((RemoteCourse) course).setLoadSolutions(false);
+    }
 
     ApplicationManager.getApplication().invokeLater(() -> {
       ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {

@@ -83,8 +83,8 @@ public class StudySyncCourseAction extends DumbAwareAction {
       return false;
     }
 
-    StudyTaskManager taskManager = StudyTaskManager.getInstance(project);
-    if (!taskManager.isLoadSolutions()) {
+    Course course = StudyTaskManager.getInstance(project).getCourse();
+    if (!(course instanceof RemoteCourse) || !((RemoteCourse) course).isLoadSolutions()) {
       return false;
     }
 

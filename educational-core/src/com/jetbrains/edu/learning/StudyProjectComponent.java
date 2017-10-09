@@ -39,10 +39,7 @@ import com.jetbrains.edu.learning.actions.StudyNextWindowAction;
 import com.jetbrains.edu.learning.actions.StudyPrevWindowAction;
 import com.jetbrains.edu.learning.core.EduNames;
 import com.jetbrains.edu.learning.core.EduUtils;
-import com.jetbrains.edu.learning.courseFormat.Course;
-import com.jetbrains.edu.learning.courseFormat.Lesson;
-import com.jetbrains.edu.learning.courseFormat.StudyStatus;
-import com.jetbrains.edu.learning.courseFormat.TaskFile;
+import com.jetbrains.edu.learning.courseFormat.*;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.editor.StudyEditorFactoryListener;
 import com.jetbrains.edu.learning.statistics.EduUsagesCollector;
@@ -123,6 +120,7 @@ public class StudyProjectComponent implements ProjectComponent {
   }
 
   private void loadSolutionsFromStepik(Course course) {
+    if (!(course instanceof RemoteCourse) || !((RemoteCourse) course).isLoadSolutions()) return;
     if (PropertiesComponent.getInstance(myProject).getBoolean(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY)) {
       PropertiesComponent.getInstance(myProject).setValue(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY, false);
       return;
