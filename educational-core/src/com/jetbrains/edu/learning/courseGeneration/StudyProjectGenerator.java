@@ -96,9 +96,7 @@ public class StudyProjectGenerator {
     if (mySelectedCourse instanceof RemoteCourse) {
       return getCourseFromStepic(project, (RemoteCourse)mySelectedCourse);
     }
-    else {
-      mySelectedCourse.initCourse(false);
-    }
+    mySelectedCourse.initCourse(false);
     return mySelectedCourse;
   }
 
