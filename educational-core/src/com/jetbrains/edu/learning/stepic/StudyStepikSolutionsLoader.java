@@ -186,7 +186,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
         if (studyEditor != null && taskFile != null) {
           mySelectedTask = taskFile.getTask();
           Task task = taskFile.getTask();
-          if (myFutures != null && myFutures.containsKey(task.getStepId())) {
+          if (myFutures.containsKey(task.getStepId())) {
             studyEditor.showLoadingPanel();
             Future future = myFutures.get(task.getStepId());
             if (!future.isDone() || !future.isCancelled()) {
