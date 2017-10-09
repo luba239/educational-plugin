@@ -352,6 +352,20 @@ public class EduStepicConnector {
     return task;
   }
 
+
+  /**
+   * Parses solution from Stepik.
+   *
+   * In Stepik solution text placeholder text is wrapped in <placeholder> tags. Here we're trying to find corresponding
+   * placeholder for all taskFile placeholders.
+   *
+   * If we can't find at least one placholder, we mark all placeholders as invalid. Invalid placeholder isn't showing
+   * and taskfile with such placeholders couldn't be checked.
+   *
+   * @param taskFile for which we're updating placeholders
+   * @param solutionFile from Stepik with text of last submission
+   * @return false if there're invalid placeholders
+   */
   static boolean setPlaceholdersFromTags(@NotNull TaskFile taskFile, @NotNull StepicWrappers.SolutionFile solutionFile) {
     int lastIndex = 0;
     StringBuilder builder = new StringBuilder(solutionFile.text);
@@ -360,11 +374,11 @@ public class EduStepicConnector {
     for (AnswerPlaceholder placeholder : placeholders) {
       int start = builder.indexOf(OPEN_PLACEHOLDER_TAG, lastIndex);
       int end = builder.indexOf(CLOSE_PLACEHOLDER_TAG, start);
-      placeholder.setOffset(start);
       if (start == -1 || end == -1) {
         isPlaceholdersValid = false;
-        continue;
+        break;
       }
+      placeholder.setOffset(start);
       String placeholderText = builder.substring(start + OPEN_PLACEHOLDER_TAG.length(), end);
       placeholder.setTaskText(placeholderText);
       placeholder.setLength(placeholderText.length());
@@ -372,6 +386,13 @@ public class EduStepicConnector {
       builder.delete(start, start + OPEN_PLACEHOLDER_TAG.length());
       lastIndex = start + placeholderText.length();
     }
+
+    if (!isPlaceholdersValid) {
+      for (AnswerPlaceholder placeholder : placeholders) {
+        markInvalid(placeholder);
+      }
+    }
+
     return isPlaceholdersValid;
   }
 

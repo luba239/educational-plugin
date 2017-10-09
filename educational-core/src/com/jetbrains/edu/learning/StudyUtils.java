@@ -573,7 +573,7 @@ public class StudyUtils {
     final Editor editor = studyEditor.getEditor();
     IdeFocusManager.getInstance(project).requestFocus(editor.getContentComponent(), true);
     final List<AnswerPlaceholder> placeholders = studyEditor.getTaskFile().getActivePlaceholders();
-    if (placeholders.isEmpty()) return;
+    if (placeholders.isEmpty() || !isTaskFileValid(studyEditor.getTaskFile())) return;
     final AnswerPlaceholder placeholder = placeholders.get(0);
     Pair<Integer, Integer> offsets = getPlaceholderOffsets(placeholder, editor.getDocument());
     editor.getSelectionModel().setSelection(offsets.first, offsets.second);
