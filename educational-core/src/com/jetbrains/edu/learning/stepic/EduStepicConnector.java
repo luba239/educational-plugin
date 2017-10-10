@@ -26,9 +26,7 @@ import com.jetbrains.edu.learning.courseGeneration.StudyGenerator;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
-import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.entity.ContentType;
@@ -636,31 +634,6 @@ public class EduStepicConnector {
       LOG.warn("Failed getting section: " + lessonId);
     }
     return new Lesson();
-  }
-
-  static boolean ping() {
-    HttpGet httpGet = new HttpGet(EduStepicNames.STEPIC_URL);
-
-    int timeoutSeconds = 10;
-    int CONNECTION_TIMEOUT_MS = timeoutSeconds * 1000;
-    RequestConfig requestConfig = RequestConfig.custom()
-            .setConnectionRequestTimeout(CONNECTION_TIMEOUT_MS)
-            .setConnectTimeout(CONNECTION_TIMEOUT_MS)
-            .setSocketTimeout(CONNECTION_TIMEOUT_MS)
-            .build();
-    httpGet.setConfig(requestConfig);
-    try {
-      CloseableHttpClient httpClient = EduStepicClient.getHttpClient();
-      CloseableHttpResponse response = httpClient.execute(httpGet);
-
-      if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-        return true;
-      }
-    }
-    catch (IOException e) {
-      LOG.warn(e.getMessage());
-    }
-    return false;
   }
 
   public static void updateCourse(@NotNull Project project) {

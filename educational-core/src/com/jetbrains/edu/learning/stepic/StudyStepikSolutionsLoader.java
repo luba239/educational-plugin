@@ -155,9 +155,6 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
 
   private static Map<Task, StudyStatus> tasksToUpdate(@NotNull Course course) {
     Map<Task, StudyStatus> tasksToUpdate = new HashMap<>();
-    if (!EduStepicConnector.ping()) {
-      return tasksToUpdate;
-    }
     Task[] allTasks = course.getLessons().stream().flatMap(lesson -> lesson.getTaskList().stream()).toArray(Task[]::new);
     int length = allTasks.length;
     for (int i = 0; i < length; i += MAX_REQUEST_PARAMS) {
@@ -238,7 +235,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
   }
 
   private static void loadSolution(@NotNull Project project, @NotNull Task task, boolean isSolved) {
-    if (task instanceof TaskWithSubtasks || !EduStepicConnector.ping()) {
+    if (task instanceof TaskWithSubtasks) {
       return;
     }
 
