@@ -42,7 +42,7 @@ public class PyStudyTaskChecker extends StudyTaskChecker<PyCharmTask> {
       return new StudyCheckResult(StudyStatus.Unchecked, "Task is broken");
     }
 
-    if (!StudyUtils.isTaskValid(myTask)) {
+    if (!StudyUtils.isTaskValid(myTask, myTask.getTaskDir(myProject))) {
       return new StudyCheckResult(StudyStatus.Unchecked, StudyEditor.BROKEN_SOLUTION_ERROR_TEXT);
     }
     CountDownLatch latch = new CountDownLatch(1);

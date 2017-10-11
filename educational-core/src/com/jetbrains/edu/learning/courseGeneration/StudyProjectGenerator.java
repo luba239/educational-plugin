@@ -88,6 +88,13 @@ public class StudyProjectGenerator {
       StudyUtils.registerStudyToolWindow(course, project);
       StudyUtils.openFirstTask(course, project);
       EduUsagesCollector.projectTypeCreated(course.isAdaptive() ? EduNames.ADAPTIVE : EduNames.STUDY);
+
+      if (course instanceof RemoteCourse) {
+        StudyStepikSolutionsLoader studyStepikSolutionsLoader = StudyStepikSolutionsLoader.getInstance(project);
+        studyStepikSolutionsLoader.init();
+        studyStepikSolutionsLoader.load(ProgressManager.getGlobalProgressIndicator(), course);
+        PropertiesComponent.getInstance(project).setValue(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY, true, false);
+      }
     });
   }
 
@@ -108,10 +115,6 @@ public class StudyProjectGenerator {
         final RemoteCourse course = EduStepicConnector.getCourse(project, selectedCourse);
         if (StudyUtils.isCourseValid(course)) {
           course.initCourse(false);
-          StudyStepikSolutionsLoader studyStepikSolutionsLoader = StudyStepikSolutionsLoader.getInstance(project);
-          studyStepikSolutionsLoader.init();
-          studyStepikSolutionsLoader.load(progressIndicator, course);
-          PropertiesComponent.getInstance(project).setValue(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY, true, false);
         }
         return course;
       });

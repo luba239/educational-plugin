@@ -378,7 +378,6 @@ public class EduStepicConnector {
       }
       placeholder.setOffset(start);
       String placeholderText = builder.substring(start + OPEN_PLACEHOLDER_TAG.length(), end);
-      placeholder.setTaskText(placeholderText);
       placeholder.setLength(placeholderText.length());
       builder.delete(end, end + CLOSE_PLACEHOLDER_TAG.length());
       builder.delete(start, start + OPEN_PLACEHOLDER_TAG.length());

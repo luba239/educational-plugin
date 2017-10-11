@@ -38,7 +38,7 @@ public class StudyEditor extends PsiAwareTextEditorImpl {
   }
 
   public void validateTaskFile() {
-    if (!StudyUtils.isTaskFileValid(myTaskFile)) {
+    if (!StudyUtils.isTaskFileValid(myTaskFile, getEditor().getDocument().getText())) {
       JLabel label = new JLabel(UIUtil.toHtml(BROKEN_SOLUTION_ERROR_TEXT));
       label.addMouseListener(new MouseAdapter() {
         @Override

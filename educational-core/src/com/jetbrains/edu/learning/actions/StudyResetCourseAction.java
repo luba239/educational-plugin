@@ -2,29 +2,24 @@ package com.jetbrains.edu.learning.actions;
 
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.diagnostic.Logger;
-import com.intellij.openapi.progress.ProgressManager;
+import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.project.DumbAwareAction;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.edu.learning.StudyTaskManager;
-import com.jetbrains.edu.learning.core.EduNames;
-import com.jetbrains.edu.learning.core.EduUtils;
-import com.jetbrains.edu.learning.courseFormat.Course;
-import com.jetbrains.edu.learning.courseFormat.Lesson;
-import com.jetbrains.edu.learning.courseFormat.RemoteCourse;
-import com.jetbrains.edu.learning.stepic.EduStepicConnector;
+import com.jetbrains.edu.learning.StudyUtils;
+import com.jetbrains.edu.learning.courseFormat.*;
+import com.jetbrains.edu.learning.courseFormat.tasks.ChoiceTask;
+import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 
-import java.io.IOException;
 import java.util.ArrayList;
-
-import static com.jetbrains.edu.learning.StudyUtils.execCancelable;
+import java.util.Map;
 
 public class StudyResetCourseAction extends DumbAwareAction {
-  private static final Logger LOG = Logger.getInstance(StudySyncCourseAction.class);
+
 
   public StudyResetCourseAction() {
-    super("Reset Course");
+    super("Reset Course", "Reset Course", null);
   }
 
   @Override
@@ -35,40 +30,34 @@ public class StudyResetCourseAction extends DumbAwareAction {
     StudyTaskManager studyTaskManager = StudyTaskManager.getInstance(project);
     Course course = studyTaskManager.getCourse();
     assert course != null;
+    ((RemoteCourse)course).setLoadSolutions(false);
 
-    removeAllLessons(project, course);
-    if (course instanceof RemoteCourse) {
-      ((RemoteCourse) course).setLoadSolutions(false);
-    }
-
-    ApplicationManager.getApplication().invokeLater(() -> {
-      ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
-        ProgressManager.getInstance().getProgressIndicator().setIndeterminate(true);
-        return execCancelable(() -> {
-          EduStepicConnector.updateCourse(project);
-          return true;
-        });
-      }, "Resetting Course", true, project);
-      EduUtils.synchronize();
-    });
-  }
-
-  private static void removeAllLessons(Project project, Course course) {
     ApplicationManager.getApplication().runWriteAction(() -> {
       for (Lesson lesson : course.getLessons()) {
-        final String lessonDirName = EduNames.LESSON + String.valueOf(lesson.getIndex());
-        try {
-          VirtualFile lessonFile = project.getBaseDir().findChild(lessonDirName);
-          if (lessonFile != null) {
-            lessonFile.delete(StudyResetCourseAction.class);
+        for (Task task : lesson.getTaskList()) {
+          VirtualFile taskDir = task.getTaskDir(project);
+          if (taskDir == null) continue;
+          for (Map.Entry<String, TaskFile> entry : task.getTaskFiles().entrySet()) {
+            String relativePath = entry.getKey();
+            TaskFile taskFile = entry.getValue();
+            VirtualFile taskFileVF = taskDir.findFileByRelativePath(relativePath);
+            if (taskFileVF != null) {
+              Document document = StudyUtils.getDocument(project.getBasePath(), lesson.getIndex(), task.getIndex(), relativePath);
+              if (document != null) {
+                StudyRefreshTaskFileAction.resetDocument(document, taskFile);
+                task.setStatus(StudyStatus.Unchecked);
+                if (task instanceof ChoiceTask) {
+                  ((ChoiceTask)task).setSelectedVariants(new ArrayList<>());
+                }
+                StudyRefreshTaskFileAction.resetAnswerPlaceholders(taskFile, project);
+              }
+            }
           }
         }
-        catch (IOException e1) {
-          LOG.warn(e1.getMessage());
-        }
       }
+
+      StudyRefreshTaskFileAction.refresh(project);
     });
-    course.setLessons(new ArrayList<>());
   }
 
   @Override

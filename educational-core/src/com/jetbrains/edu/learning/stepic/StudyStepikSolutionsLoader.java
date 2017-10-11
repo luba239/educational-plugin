@@ -28,6 +28,7 @@ import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.courseFormat.tasks.TaskWithSubtasks;
 import com.jetbrains.edu.learning.editor.StudyEditor;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.util.*;
@@ -97,7 +98,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
     });
   }
 
-  public void load(@NotNull ProgressIndicator progressIndicator, @NotNull Course course) {
+  public void load(@Nullable ProgressIndicator progressIndicator, @NotNull Course course) {
     Map<Task, StudyStatus> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
     if (tasksToUpdate != null) {
       updateTasks(tasksToUpdate, progressIndicator);
@@ -107,7 +108,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
     }
   }
 
-  private void updateTasks(@NotNull Map<Task, StudyStatus> tasksToUpdate, @NotNull ProgressIndicator progressIndicator) {
+  private void updateTasks(@NotNull Map<Task, StudyStatus> tasksToUpdate, @Nullable ProgressIndicator progressIndicator) {
     cancelUnfinishedTasks();
     myFutures.clear();
 
@@ -116,14 +117,17 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
       Task task = taskStudyStatusEntry.getKey();
       StudyStatus status = taskStudyStatusEntry.getValue();
       task.setStatus(status);
-      if (!progressIndicator.isCanceled()) {
+      if (progressIndicator == null || !progressIndicator.isCanceled()) {
           Future<?> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
           boolean isSolved = task.getStatus() == StudyStatus.Solved;
           loadSolution(myProject, task, isSolved);
+          countDownLatch.countDown();
         });
         myFutures.put(task.getStepId(), future);
       }
-      countDownLatch.countDown();
+      else {
+        countDownLatch.countDown();
+      }
     }
 
     ApplicationManager.getApplication().invokeLater(() -> {
@@ -240,36 +244,37 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
     }
 
     try {
-      if (!loadSolution(task, isSolved)) return;
-      updateFiles(project, task);
+      String solutionText = loadSolution(task, isSolved);
+      if (solutionText.isEmpty()) return;
+      updateFiles(project, task, solutionText);
     }
     catch (IOException e) {
       LOG.warn(e.getMessage());
     }
   }
 
-  private static boolean loadSolution(@NotNull Task task, boolean isSolved) throws IOException {
+  private static String loadSolution(@NotNull Task task, boolean isSolved) throws IOException {
     List<StepicWrappers.SolutionFile> solutionFiles = getLastSubmission(String.valueOf(task.getStepId()), isSolved);
     if (solutionFiles.isEmpty()) {
       task.setStatus(StudyStatus.Unchecked);
-      return false;
+      return "";
     }
     task.setStatus(isSolved ? StudyStatus.Solved : StudyStatus.Failed);
     for (StepicWrappers.SolutionFile file : solutionFiles) {
       TaskFile taskFile = task.getTaskFile(file.name);
       if (taskFile != null) {
         if (EduStepicConnector.setPlaceholdersFromTags(taskFile, file)) {
-          taskFile.text = removeAllTags(file.text);
+          return removeAllTags(file.text);
         }
         else {
-          taskFile.text = file.text;
+          return file.text;
         }
       }
     }
-    return true;
+    return "";
   }
 
-  private static void updateFiles(@NotNull Project project, @NotNull Task task) {
+  private static void updateFiles(@NotNull Project project, @NotNull Task task, String solutionText) {
     VirtualFile taskDir = task.getTaskDir(project);
     if (taskDir == null) {
       return;
@@ -280,7 +285,8 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
         if (vFile != null) {
           try {
             taskFile.setTrackChanges(false);
-            VfsUtil.saveText(vFile, taskFile.text);
+            VfsUtil.saveText(vFile, solutionText);
+            LOG.warn(solutionText);
             SaveAndSyncHandler.getInstance().refreshOpenFiles();
             taskFile.setTrackChanges(true);
           }
