@@ -7,6 +7,7 @@ import com.intellij.openapi.fileEditor.impl.text.TextEditorProvider;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBLoadingPanel;
+import com.intellij.ui.components.labels.ActionLink;
 import com.intellij.util.ui.UIUtil;
 import com.jetbrains.edu.learning.StudyUtils;
 import com.jetbrains.edu.learning.actions.StudyRefreshTaskFileAction;
@@ -16,8 +17,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,7 +25,9 @@ import java.util.Map;
  * also @see {@link StudyFileEditorProvider}
  */
 public class StudyEditor extends PsiAwareTextEditorImpl {
-  public static final String BROKEN_SOLUTION_ERROR_TEXT = "Solution can't be loaded. <a href=\"\">Reset task</a> to solve it again";
+  public static final String BROKEN_SOLUTION_ERROR_TEXT_START = "Solution can't be loaded.";
+  public static final String BROKEN_SOLUTION_ERROR_TEXT_END = " to solve it again";
+  public static final String ACTION_TEXT = "Reset task";
   private final TaskFile myTaskFile;
   private static final Map<Document, EduDocumentListener> myDocumentListeners = new HashMap<>();
 
@@ -39,27 +40,12 @@ public class StudyEditor extends PsiAwareTextEditorImpl {
 
   public void validateTaskFile() {
     if (!StudyUtils.isTaskFileValid(myTaskFile, getEditor().getDocument().getText())) {
-      JLabel label = new JLabel(UIUtil.toHtml(BROKEN_SOLUTION_ERROR_TEXT));
-      label.addMouseListener(new MouseAdapter() {
-        @Override
-        public void mouseClicked(MouseEvent e) {
-          if (e.getClickCount() == 1) {
-            StudyRefreshTaskFileAction.refresh(myProject);
-          }
-        }
-
-        @Override
-        public void mouseEntered(MouseEvent e) {
-          label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        }
-
-        @Override
-        public void mouseExited(MouseEvent e) {
-          label.setCursor(Cursor.getDefaultCursor());
-        }
-      });
-      label.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
-      getEditor().setHeaderComponent(label);
+      JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+      panel.add(new JLabel(BROKEN_SOLUTION_ERROR_TEXT_START));
+      panel.add(new ActionLink(UIUtil.toHtml(ACTION_TEXT), new StudyRefreshTaskFileAction()));
+      panel.add(new JLabel(BROKEN_SOLUTION_ERROR_TEXT_END));
+      panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 0));
+      getEditor().setHeaderComponent(panel);
     }
     else {
       getEditor().setHeaderComponent(null);
