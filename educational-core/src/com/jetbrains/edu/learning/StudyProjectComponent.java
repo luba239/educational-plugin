@@ -128,9 +128,11 @@ public class StudyProjectComponent implements ProjectComponent {
     StudyStepikSolutionsLoader studyStepikSolutionsLoader = StudyStepikSolutionsLoader.getInstance(myProject);
     studyStepikSolutionsLoader.init();
     try {
-      Map<Task, StudyStatus> tasksToUpdate = studyStepikSolutionsLoader.tasksToUpdateUnderProgress();
-      for (Task task : tasksToUpdate.keySet()) {
-        task.setStatus(tasksToUpdate.get(task));
+      List<Pair<Task, StudyStatus>> tasksToUpdate = studyStepikSolutionsLoader.tasksToUpdateUnderProgress();
+      for (Pair<Task, StudyStatus> pair : tasksToUpdate) {
+        Task task = pair.getFirst();
+        StudyStatus status = pair.getSecond();
+        task.setStatus(status);
       }
       studyStepikSolutionsLoader.loadSolutionsInBackground(tasksToUpdate);
     }

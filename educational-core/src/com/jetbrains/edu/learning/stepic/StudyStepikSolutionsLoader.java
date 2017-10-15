@@ -14,6 +14,7 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task.Backgroundable;
 import com.intellij.openapi.progress.Task.WithResult;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBLoadingPanel;
@@ -75,21 +76,21 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
   }
 
   @NotNull
-  public Map<Task, StudyStatus> tasksToUpdateUnderProgress() throws Exception {
-    return ProgressManager.getInstance().run(new WithResult<Map<Task, StudyStatus>, Exception>(myProject, "Updating Task Statuses", true) {
+  public List<Pair<Task, StudyStatus>> tasksToUpdateUnderProgress() throws Exception {
+    return ProgressManager.getInstance().run(new WithResult<List<Pair<Task, StudyStatus>>, Exception>(myProject, "Updating Task Statuses", true) {
       @Override
-      protected Map<Task, StudyStatus> compute(@NotNull ProgressIndicator progressIndicator) {
+      protected List<Pair<Task, StudyStatus>> compute(@NotNull ProgressIndicator progressIndicator) {
         progressIndicator.setIndeterminate(true);
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
         if (course != null) {
           return StudyUtils.execCancelable(() -> tasksToUpdate(course));
         }
-        return Collections.emptyMap();
+        return Collections.emptyList();
       }
     });
   }
 
-  public void loadSolutionsInBackground(@NotNull Map<Task, StudyStatus> tasksToUpdate) {
+  public void loadSolutionsInBackground(@NotNull List<Pair<Task, StudyStatus>> tasksToUpdate) {
     ProgressManager.getInstance().run(new Backgroundable(myProject, "Updating Solutions") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {
@@ -99,7 +100,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
   }
 
   public void load(@Nullable ProgressIndicator progressIndicator, @NotNull Course course) {
-    Map<Task, StudyStatus> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
+    List<Pair<Task, StudyStatus>> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
     if (tasksToUpdate != null) {
       updateTasks(tasksToUpdate, progressIndicator);
     }
@@ -108,14 +109,14 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
     }
   }
 
-  private void updateTasks(@NotNull Map<Task, StudyStatus> tasksToUpdate, @Nullable ProgressIndicator progressIndicator) {
+  private void updateTasks(@NotNull List<Pair<Task, StudyStatus>> tasksToUpdate, @Nullable ProgressIndicator progressIndicator) {
     cancelUnfinishedTasks();
     myFutures.clear();
 
     CountDownLatch countDownLatch = new CountDownLatch(tasksToUpdate.size());
-    for (Map.Entry<Task, StudyStatus> taskStudyStatusEntry : tasksToUpdate.entrySet()) {
-      Task task = taskStudyStatusEntry.getKey();
-      StudyStatus status = taskStudyStatusEntry.getValue();
+    for (Pair<Task, StudyStatus> pair : tasksToUpdate) {
+      Task task = pair.getFirst();
+      StudyStatus status = pair.getSecond();
       task.setStatus(status);
       if (progressIndicator == null || !progressIndicator.isCanceled()) {
           Future<?> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
@@ -131,7 +132,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
     }
 
     ApplicationManager.getApplication().invokeLater(() -> {
-      if (mySelectedTask != null && tasksToUpdate.containsKey(mySelectedTask)) {
+      if (mySelectedTask != null && tasksToUpdate.contains(mySelectedTask)) {
         StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
         assert selectedStudyEditor != null;
         selectedStudyEditor.showLoadingPanel();
@@ -157,8 +158,8 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
     }
   }
 
-  private static Map<Task, StudyStatus> tasksToUpdate(@NotNull Course course) {
-    Map<Task, StudyStatus> tasksToUpdate = new HashMap<>();
+  private static List<Pair<Task, StudyStatus>> tasksToUpdate(@NotNull Course course) {
+    List<Pair<Task, StudyStatus>> tasksToUpdate = new ArrayList<>();
     Task[] allTasks = course.getLessons().stream().flatMap(lesson -> lesson.getTaskList().stream()).toArray(Task[]::new);
     int length = allTasks.length;
     for (int i = 0; i < length; i += MAX_REQUEST_PARAMS) {
@@ -170,7 +171,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
         Boolean isSolved = taskStatuses[j];
         Task task = allTasks[j];
         if (isSolved != null && isToUpdate(isSolved, task.getStatus(), task.getStepId())) {
-          tasksToUpdate.put(allTasks[j], isSolved ? StudyStatus.Solved : StudyStatus.Failed);
+          tasksToUpdate.add(new Pair<>(allTasks[j], isSolved ? StudyStatus.Solved : StudyStatus.Failed));
         }
       }
     }
