@@ -132,7 +132,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
     }
 
     ApplicationManager.getApplication().invokeLater(() -> {
-      if (mySelectedTask != null && tasksToUpdate.contains(mySelectedTask)) {
+      if (mySelectedTask != null && tasksToUpdate.stream().map(pair -> pair.getFirst()).anyMatch(task -> task.equals(mySelectedTask))) {
         StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
         assert selectedStudyEditor != null;
         selectedStudyEditor.showLoadingPanel();
