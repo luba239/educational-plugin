@@ -209,7 +209,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
           if (selectedEditor != null && mySelectedTask.getTaskFiles().containsKey(selectedEditor.getTaskFile().name)) {
             JBLoadingPanel component = selectedEditor.getComponent();
             component.stopLoading();
-            ((EditorImpl)selectedEditor.getEditor()).setViewer(false);
+            ((EditorImpl) selectedEditor.getEditor()).setViewer(false);
             selectedEditor.validateTaskFile();
           }
         });
