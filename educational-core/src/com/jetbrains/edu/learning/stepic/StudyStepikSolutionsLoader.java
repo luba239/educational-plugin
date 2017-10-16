@@ -287,7 +287,6 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
           try {
             taskFile.setTrackChanges(false);
             VfsUtil.saveText(vFile, solutionText);
-            LOG.warn(solutionText);
             SaveAndSyncHandler.getInstance().refreshOpenFiles();
             taskFile.setTrackChanges(true);
           }
