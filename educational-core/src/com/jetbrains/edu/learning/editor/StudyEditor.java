@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBLoadingPanel;
 import com.intellij.ui.components.labels.ActionLink;
+import com.intellij.util.ui.JBUI;
 import com.jetbrains.edu.learning.StudyUtils;
 import com.jetbrains.edu.learning.actions.StudyRefreshTaskFileAction;
 import com.jetbrains.edu.learning.core.EduDocumentListener;
@@ -45,7 +46,7 @@ public class StudyEditor extends PsiAwareTextEditorImpl {
       actionLink.setVerticalAlignment(SwingConstants.CENTER);
       panel.add(actionLink);
       panel.add(new JLabel(BROKEN_SOLUTION_ERROR_TEXT_END));
-      panel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 0));
+      panel.setBorder(BorderFactory.createEmptyBorder(JBUI.scale(5), JBUI.scale(5), JBUI.scale(5), 0));
       getEditor().setHeaderComponent(panel);
     }
     else {
