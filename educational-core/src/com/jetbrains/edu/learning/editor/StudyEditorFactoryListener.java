@@ -79,7 +79,7 @@ public class StudyEditorFactoryListener implements EditorFactoryListener {
 
         StudyEditor.addDocumentListener(document, new EduDocumentListener(taskFile, true));
 
-        if (!taskFile.getAnswerPlaceholders().isEmpty() && StudyUtils.isTaskFileValid(taskFile, editor.getDocument().getText())) {
+        if (!taskFile.getAnswerPlaceholders().isEmpty() && taskFile.isValid(editor.getDocument().getText())) {
           StudyNavigator.navigateToFirstAnswerPlaceholder(editor, taskFile);
           boolean isStudyProject = EduNames.STUDY.equals(course.getCourseMode());
           StudyUtils.drawAllAnswerPlaceholders(editor, taskFile);

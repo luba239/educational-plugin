@@ -298,4 +298,9 @@ public class AnswerPlaceholder {
       }
     }
   }
+
+  public boolean isPlaceholderValid(int length) {
+    int end = getOffset() + getLength();
+    return getOffset() > 0 && length > 0 && end < length;
+  }
 }

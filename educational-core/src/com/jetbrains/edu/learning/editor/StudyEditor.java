@@ -39,7 +39,7 @@ public class StudyEditor extends PsiAwareTextEditorImpl {
   }
 
   public void validateTaskFile() {
-    if (!StudyUtils.isTaskFileValid(myTaskFile, getEditor().getDocument().getText())) {
+    if (!myTaskFile.isValid(getEditor().getDocument().getText())) {
       JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
       panel.add(new JLabel(BROKEN_SOLUTION_ERROR_TEXT_START));
       panel.add(new ActionLink(UIUtil.toHtml(ACTION_TEXT), new StudyRefreshTaskFileAction()));

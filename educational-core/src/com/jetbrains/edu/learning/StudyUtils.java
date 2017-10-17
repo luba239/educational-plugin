@@ -34,7 +34,6 @@ import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.util.io.FileUtil;
 import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.LocalFileSystem;
-import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.newvfs.NewVirtualFile;
 import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
@@ -309,7 +308,7 @@ public class StudyUtils {
     editor.getMarkupModel().removeAllHighlighters();
     final Project project = editor.getProject();
     if (project == null) return;
-    if (!isTaskFileValid(taskFile, editor.getDocument().getText())) return;
+    if (!taskFile.isValid(editor.getDocument().getText())) return;
     final StudyTaskManager taskManager = StudyTaskManager.getInstance(project);
     for (AnswerPlaceholder answerPlaceholder : taskFile.getAnswerPlaceholders()) {
       final JBColor color = taskManager.getColor(answerPlaceholder);
@@ -574,7 +573,7 @@ public class StudyUtils {
     final Editor editor = studyEditor.getEditor();
     IdeFocusManager.getInstance(project).requestFocus(editor.getContentComponent(), true);
     final List<AnswerPlaceholder> placeholders = studyEditor.getTaskFile().getActivePlaceholders();
-    if (placeholders.isEmpty() || !isTaskFileValid(studyEditor.getTaskFile(), editor.getDocument().getText())) return;
+    if (placeholders.isEmpty() || !studyEditor.getTaskFile().isValid(editor.getDocument().getText())) return;
     final AnswerPlaceholder placeholder = placeholders.get(0);
     Pair<Integer, Integer> offsets = getPlaceholderOffsets(placeholder, editor.getDocument());
     editor.getSelectionModel().setSelection(offsets.first, offsets.second);
@@ -772,34 +771,5 @@ public class StudyUtils {
       return coursesDir;
     }
     return new File(jarPath, "courses");
-  }
-
-  public static boolean isTaskValid(@NotNull Task task, VirtualFile taskDir) {
-    for (TaskFile taskFile : task.getTaskFiles().values()) {
-      VirtualFile file = taskDir.findFileByRelativePath(taskFile.name);
-      if (file == null) return false;
-      try {
-        String text = VfsUtil.loadText(file);
-        if (!isTaskFileValid(taskFile, text)) return false;
-      }
-      catch (IOException e) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  public static boolean isTaskFileValid(TaskFile taskFile, String text) {
-    int length = text.length();
-    List<AnswerPlaceholder> placeholders = taskFile.getAnswerPlaceholders();
-    for (AnswerPlaceholder placeholder : placeholders) {
-      if (!isPlaceholderValid(length, placeholder)) return false;
-    }
-    return true;
-  }
-
-  private static boolean isPlaceholderValid(int length, AnswerPlaceholder placeholder) {
-    int end = placeholder.getOffset() + placeholder.getLength();
-    return placeholder.getOffset() > 0 && length > 0 && end < length;
   }
 }
