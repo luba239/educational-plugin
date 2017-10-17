@@ -43,6 +43,7 @@ import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags
 public class StudyStepikSolutionsLoader implements Disposable{
   private static final Logger LOG = DefaultLogger.getInstance(StudyStepikSolutionsLoader.class);
   private static final int MAX_REQUEST_PARAMS = 100; // restriction of Stepik API for multiple requests
+  private static final String PROGRESS_ID_PREFIX = "77-";
   private final HashMap<Integer, Future> myFutures = new HashMap<>();
   private final Project myProject;
   private MessageBusConnection myBusConnection;
@@ -165,7 +166,7 @@ public class StudyStepikSolutionsLoader implements Disposable{
     int length = allTasks.length;
     for (int i = 0; i < length; i += MAX_REQUEST_PARAMS) {
       List<Task> sublist = Arrays.asList(allTasks).subList(i, Math.min(i + MAX_REQUEST_PARAMS, length));
-      String[] progresses = sublist.stream().map(task -> "77-" + String.valueOf(task.getStepId())).toArray(String[]::new);
+      String[] progresses = sublist.stream().map(task -> PROGRESS_ID_PREFIX + String.valueOf(task.getStepId())).toArray(String[]::new);
       Boolean[] taskStatuses = EduStepicConnector.taskStatuses(progresses);
       if (taskStatuses == null) return tasksToUpdate;
       for (int j = 0; j < sublist.size(); j++) {
