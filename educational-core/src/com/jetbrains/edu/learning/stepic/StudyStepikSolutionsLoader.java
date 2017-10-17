@@ -65,13 +65,13 @@ public class StudyStepikSolutionsLoader implements Disposable{
     addFileOpenListener();
   }
 
-  public void loadInBackground() {
+  public void loadSolutionsInBackground() {
     ProgressManager.getInstance().run(new Backgroundable(myProject, "Getting Tasks to Update") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
         if (course != null) {
-          load(progressIndicator, course);
+          loadSolutions(progressIndicator, course);
         }
       }
     });
@@ -101,7 +101,7 @@ public class StudyStepikSolutionsLoader implements Disposable{
     });
   }
 
-  public void load(@Nullable ProgressIndicator progressIndicator, @NotNull Course course) {
+  public void loadSolutions(@Nullable ProgressIndicator progressIndicator, @NotNull Course course) {
     List<Pair<Task, StudyStatus>> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
     if (tasksToUpdate != null) {
       updateTasks(tasksToUpdate, progressIndicator);
