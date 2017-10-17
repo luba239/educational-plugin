@@ -51,7 +51,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
     super(project);
   }
 
-  public static StudyStepikSolutionsLoader getInstance(Project project) {
+  public static StudyStepikSolutionsLoader getInstance(@NotNull Project project) {
     return ServiceManager.getService(project, StudyStepikSolutionsLoader.class);
   }
 

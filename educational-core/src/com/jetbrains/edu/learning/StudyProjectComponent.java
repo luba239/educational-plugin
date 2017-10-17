@@ -119,7 +119,7 @@ public class StudyProjectComponent implements ProjectComponent {
     });
   }
 
-  private void loadSolutionsFromStepik(Course course) {
+  private void loadSolutionsFromStepik(@NotNull Course course) {
     if (!(course instanceof RemoteCourse) || !((RemoteCourse) course).isLoadSolutions()) return;
     if (PropertiesComponent.getInstance(myProject).getBoolean(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY)) {
       PropertiesComponent.getInstance(myProject).setValue(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY, false);
