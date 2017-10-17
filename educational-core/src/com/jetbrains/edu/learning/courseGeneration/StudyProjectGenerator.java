@@ -89,7 +89,7 @@ public class StudyProjectGenerator {
       StudyUtils.openFirstTask(course, project);
       EduUsagesCollector.projectTypeCreated(course.isAdaptive() ? EduNames.ADAPTIVE : EduNames.STUDY);
 
-      if (course instanceof RemoteCourse) {
+      if (course instanceof RemoteCourse && StudySettings.getInstance().getUser() != null) {
         StudyStepikSolutionsLoader studyStepikSolutionsLoader = StudyStepikSolutionsLoader.getInstance(project);
         studyStepikSolutionsLoader.init();
         studyStepikSolutionsLoader.loadSolutions(ProgressManager.getGlobalProgressIndicator(), course);
