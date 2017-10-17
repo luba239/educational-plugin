@@ -54,10 +54,14 @@ public class StudyStepikSolutionsLoader implements Disposable{
   }
 
   public static StudyStepikSolutionsLoader getInstance(@NotNull Project project) {
-    return ServiceManager.getService(project, StudyStepikSolutionsLoader.class);
+    StudyStepikSolutionsLoader service = ServiceManager.getService(project, StudyStepikSolutionsLoader.class);
+    if (service != null) {
+      service.init();
+    }
+    return service;
   }
 
-  public void init() {
+  private void init() {
     StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
     if (selectedStudyEditor != null && selectedStudyEditor.getTaskFile() != null) {
       mySelectedTask = selectedStudyEditor.getTaskFile().getTask();

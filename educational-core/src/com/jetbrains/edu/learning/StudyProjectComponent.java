@@ -126,7 +126,6 @@ public class StudyProjectComponent implements ProjectComponent {
       return;
     }
     StudyStepikSolutionsLoader studyStepikSolutionsLoader = StudyStepikSolutionsLoader.getInstance(myProject);
-    studyStepikSolutionsLoader.init();
     try {
       List<Pair<Task, StudyStatus>> tasksToUpdate = studyStepikSolutionsLoader.tasksToUpdateUnderProgress();
       for (Pair<Task, StudyStatus> pair : tasksToUpdate) {

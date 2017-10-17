@@ -91,7 +91,6 @@ public class StudyProjectGenerator {
 
       if (course instanceof RemoteCourse && StudySettings.getInstance().getUser() != null) {
         StudyStepikSolutionsLoader studyStepikSolutionsLoader = StudyStepikSolutionsLoader.getInstance(project);
-        studyStepikSolutionsLoader.init();
         studyStepikSolutionsLoader.loadSolutions(ProgressManager.getGlobalProgressIndicator(), course);
         PropertiesComponent.getInstance(project).setValue(EduStepicNames.ARE_SOLUTIONS_UPDATED_PROPERTY, true, false);
       }
