@@ -1,8 +1,8 @@
 package com.jetbrains.edu.learning.stepic;
 
 import com.intellij.ide.SaveAndSyncHandler;
+import com.intellij.openapi.Disposable;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.components.AbstractProjectComponent;
 import com.intellij.openapi.components.ServiceManager;
 import com.intellij.openapi.diagnostic.DefaultLogger;
 import com.intellij.openapi.diagnostic.Logger;
@@ -40,15 +40,16 @@ import java.util.concurrent.Future;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.getLastSubmission;
 import static com.jetbrains.edu.learning.stepic.EduStepicConnector.removeAllTags;
 
-public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
+public class StudyStepikSolutionsLoader implements Disposable{
   private static final Logger LOG = DefaultLogger.getInstance(StudyStepikSolutionsLoader.class);
   private static final int MAX_REQUEST_PARAMS = 100; // restriction of Stepik API for multiple requests
   private final HashMap<Integer, Future> myFutures = new HashMap<>();
+  private final Project myProject;
   private MessageBusConnection myBusConnection;
   private Task mySelectedTask;
 
   protected StudyStepikSolutionsLoader(@NotNull final Project project) {
-    super(project);
+    this.myProject = project;
   }
 
   public static StudyStepikSolutionsLoader getInstance(@NotNull Project project) {
@@ -299,7 +300,7 @@ public class StudyStepikSolutionsLoader extends AbstractProjectComponent {
   }
 
   @Override
-  public void disposeComponent() {
+  public void dispose() {
     myBusConnection.disconnect();
     cancelUnfinishedTasks();
   }
