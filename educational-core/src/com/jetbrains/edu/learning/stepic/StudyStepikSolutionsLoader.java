@@ -14,7 +14,6 @@ import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.progress.Task.Backgroundable;
 import com.intellij.openapi.progress.Task.WithResult;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Pair;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.components.JBLoadingPanel;
@@ -82,10 +81,10 @@ public class StudyStepikSolutionsLoader implements Disposable{
   }
 
   @NotNull
-  public List<Pair<Task, StudyStatus>> tasksToUpdateUnderProgress() throws Exception {
-    return ProgressManager.getInstance().run(new WithResult<List<Pair<Task, StudyStatus>>, Exception>(myProject, "Updating Task Statuses", true) {
+  public List<Task> tasksToUpdateUnderProgress() throws Exception {
+    return ProgressManager.getInstance().run(new WithResult<List<Task>, Exception>(myProject, "Updating Task Statuses", true) {
       @Override
-      protected List<Pair<Task, StudyStatus>> compute(@NotNull ProgressIndicator progressIndicator) {
+      protected List<Task> compute(@NotNull ProgressIndicator progressIndicator) {
         progressIndicator.setIndeterminate(true);
         Course course = StudyTaskManager.getInstance(myProject).getCourse();
         if (course != null) {
@@ -96,7 +95,7 @@ public class StudyStepikSolutionsLoader implements Disposable{
     });
   }
 
-  public void loadSolutionsInBackground(@NotNull List<Pair<Task, StudyStatus>> tasksToUpdate) {
+  public void loadSolutionsInBackground(@NotNull List<Task> tasksToUpdate) {
     ProgressManager.getInstance().run(new Backgroundable(myProject, "Updating Solutions") {
       @Override
       public void run(@NotNull ProgressIndicator progressIndicator) {
@@ -106,7 +105,7 @@ public class StudyStepikSolutionsLoader implements Disposable{
   }
 
   public void loadSolutions(@Nullable ProgressIndicator progressIndicator, @NotNull Course course) {
-    List<Pair<Task, StudyStatus>> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
+    List<Task> tasksToUpdate = StudyUtils.execCancelable(() -> tasksToUpdate(course));
     if (tasksToUpdate != null) {
       updateTasks(tasksToUpdate, progressIndicator);
     }
@@ -115,15 +114,12 @@ public class StudyStepikSolutionsLoader implements Disposable{
     }
   }
 
-  private void updateTasks(@NotNull List<Pair<Task, StudyStatus>> tasksToUpdate, @Nullable ProgressIndicator progressIndicator) {
+  private void updateTasks(@NotNull List<Task> tasksToUpdate, @Nullable ProgressIndicator progressIndicator) {
     cancelUnfinishedTasks();
     myFutures.clear();
 
     CountDownLatch countDownLatch = new CountDownLatch(tasksToUpdate.size());
-    for (Pair<Task, StudyStatus> pair : tasksToUpdate) {
-      Task task = pair.getFirst();
-      StudyStatus status = pair.getSecond();
-      task.setStatus(status);
+    for (Task task : tasksToUpdate) {
       if (progressIndicator == null || !progressIndicator.isCanceled()) {
           Future<?> future = ApplicationManager.getApplication().executeOnPooledThread(() -> {
           boolean isSolved = task.getStatus() == StudyStatus.Solved;
@@ -138,7 +134,7 @@ public class StudyStepikSolutionsLoader implements Disposable{
     }
 
     ApplicationManager.getApplication().invokeLater(() -> {
-      if (mySelectedTask != null && tasksToUpdate.stream().map(pair -> pair.getFirst()).anyMatch(task -> task.equals(mySelectedTask))) {
+      if (mySelectedTask != null && tasksToUpdate.contains(mySelectedTask)) {
         StudyEditor selectedStudyEditor = StudyUtils.getSelectedStudyEditor(myProject);
         assert selectedStudyEditor != null;
         selectedStudyEditor.showLoadingPanel();
@@ -164,8 +160,8 @@ public class StudyStepikSolutionsLoader implements Disposable{
     }
   }
 
-  private static List<Pair<Task, StudyStatus>> tasksToUpdate(@NotNull Course course) {
-    List<Pair<Task, StudyStatus>> tasksToUpdate = new ArrayList<>();
+  private List<Task> tasksToUpdate(@NotNull Course course) {
+    List<Task> tasksToUpdate = new ArrayList<>();
     Task[] allTasks = course.getLessons().stream().flatMap(lesson -> lesson.getTaskList().stream()).toArray(Task[]::new);
     int length = allTasks.length;
     for (int i = 0; i < length; i += MAX_REQUEST_PARAMS) {
@@ -177,7 +173,9 @@ public class StudyStepikSolutionsLoader implements Disposable{
         Boolean isSolved = taskStatuses[j];
         Task task = allTasks[j];
         if (isSolved != null && isToUpdate(isSolved, task.getStatus(), task.getStepId())) {
-          tasksToUpdate.add(new Pair<>(allTasks[j], isSolved ? StudyStatus.Solved : StudyStatus.Failed));
+          StudyStatus studyStatus = isSolved ? StudyStatus.Solved : StudyStatus.Failed;
+          task.setStatus(studyStatus);
+          tasksToUpdate.add(task);
         }
       }
     }
