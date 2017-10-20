@@ -1,4 +1,4 @@
-package com.jetbrains.edu.coursecreator.actions.studio
+package com.jetbrains.edu.android.actions
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile

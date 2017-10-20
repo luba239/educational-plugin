@@ -1,4 +1,4 @@
-package com.jetbrains.edu.kotlin.android;
+package com.jetbrains.edu.android;
 
 import com.intellij.ProjectTopics;
 import com.intellij.openapi.application.ApplicationManager;
@@ -16,6 +16,7 @@ import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.util.messages.MessageBusConnection;
 import com.jetbrains.edu.kotlin.EduKotlinPluginConfigurator;
+import com.jetbrains.edu.learning.StudyUtils;
 import com.jetbrains.edu.learning.checker.StudyTaskChecker;
 import com.jetbrains.edu.learning.courseFormat.Course;
 import com.jetbrains.edu.learning.courseFormat.Lesson;
@@ -23,12 +24,12 @@ import com.jetbrains.edu.learning.courseFormat.tasks.PyCharmTask;
 import com.jetbrains.edu.learning.courseFormat.tasks.Task;
 import com.jetbrains.edu.learning.courseGeneration.StudyGenerator;
 import com.jetbrains.edu.learning.newproject.EduCourseProjectGenerator;
-import com.jetbrains.edu.utils.EduIntellijUtils;
-import com.jetbrains.edu.utils.EduPluginConfiguratorBase;
+import icons.AndroidIcons;
 import org.jetbrains.android.sdk.AndroidSdkType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -37,8 +38,7 @@ import java.util.List;
 public class EduKotlinAndroidPluginConfigurator extends EduKotlinPluginConfigurator {
 
   private static final String DEFAULT_COURSE_PATH = "AndroidCourse.zip";
-  private static final Logger LOG = Logger.getInstance(EduPluginConfiguratorBase.class);
-  private final EduKotlinAndroidCourseProjectGenerator myGenerator = new EduKotlinAndroidCourseProjectGenerator();
+  private static final Logger LOG = Logger.getInstance(EduKotlinAndroidPluginConfigurator.class);
 
   @NotNull
   @Override
@@ -48,7 +48,7 @@ public class EduKotlinAndroidPluginConfigurator extends EduKotlinPluginConfigura
 
   @Override
   public List<String> getBundledCoursePaths() {
-    File bundledCourseRoot = EduIntellijUtils.getBundledCourseRoot(DEFAULT_COURSE_PATH, EduKotlinAndroidPluginConfigurator.class);
+    File bundledCourseRoot = StudyUtils.getBundledCourseRoot(DEFAULT_COURSE_PATH, EduKotlinAndroidPluginConfigurator.class);
     return Collections.singletonList(FileUtil.join(bundledCourseRoot.getAbsolutePath(), DEFAULT_COURSE_PATH));
   }
 
@@ -61,7 +61,7 @@ public class EduKotlinAndroidPluginConfigurator extends EduKotlinPluginConfigura
     final Task task = lessons.get(0).getTaskList().get(0);
 
     if (moduleDir == null) {
-      Logger.getInstance(EduPluginConfiguratorBase.class).error("Can't find module dir ");
+      LOG.error("Can't find module dir ");
       return;
     }
 
@@ -100,7 +100,14 @@ public class EduKotlinAndroidPluginConfigurator extends EduKotlinPluginConfigura
   }
 
   @Override
-  public EduCourseProjectGenerator getEduCourseProjectGenerator() {
-    return myGenerator;
+  public EduCourseProjectGenerator<Object> getEduCourseProjectGenerator(@NotNull Course course) {
+    return new EduKotlinAndroidCourseProjectGenerator(course);
+  }
+
+
+  @Nullable
+  @Override
+  public Icon getLogo() {
+    return AndroidIcons.Android;
   }
 }

@@ -1,4 +1,4 @@
-package com.jetbrains.edu.kotlin.android;
+package com.jetbrains.edu.android;
 
 import com.android.SdkConstants;
 import com.intellij.openapi.application.ApplicationManager;

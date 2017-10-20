@@ -1,4 +1,4 @@
-package com.jetbrains.edu.kotlin.android;
+package com.jetbrains.edu.android;
 
 import com.android.ddmlib.AndroidDebugBridge;
 import com.android.ddmlib.IDevice;

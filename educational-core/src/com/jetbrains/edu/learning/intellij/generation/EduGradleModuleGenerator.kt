@@ -87,7 +87,7 @@ object EduGradleModuleGenerator {
         }
     }
 
-    private fun createGradleWrapper(moduleDirPath: String) {
+    fun createGradleWrapper(moduleDirPath: String) {
         val projectDirPath = File(FileUtil.toSystemDependentName(moduleDirPath))
         GradleWrapper.create(projectDirPath)
     }

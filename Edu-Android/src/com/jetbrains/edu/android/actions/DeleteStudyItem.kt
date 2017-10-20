@@ -1,4 +1,4 @@
-package com.jetbrains.edu.coursecreator.actions.studio
+package com.jetbrains.edu.android.actions
 
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.CommonDataKeys

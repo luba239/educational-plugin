@@ -1,0 +1,30 @@
+<idea-plugin>
+    <depends>com.intellij.modules.lang</depends>
+    <depends>org.jetbrains.android</depends>
+
+    <application-components>
+        <component>
+            <implementation-class>com.jetbrains.edu.android.EduKotlinAndroidApplicationComponent
+            </implementation-class>
+        </component>
+    </application-components>
+
+    <extensions defaultExtensionNs="Educational">
+        <pluginConfigurator language="edu-kotlin-android"
+                            implementationClass="com.jetbrains.edu.android.EduKotlinAndroidPluginConfigurator"/>
+        <checkListener implementation="com.jetbrains.edu.android.EduKotlinStudyCheckListener"/>
+    </extensions>
+
+    <actions>
+        <action class="com.jetbrains.edu.android.actions.CCDeleteTask"
+                id="Educational.Educator.CCDeleteTask" use-shortcut-of="$Delete">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after"
+                          relative-to-action="Educational.Educator.ProjectView"/>
+        </action>
+        <action class="com.jetbrains.edu.android.actions.CCDeleteLesson"
+                id="Educational.Educator.CCDeleteLesson" use-shortcut-of="$Delete">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after"
+                          relative-to-action="Educational.Educator.ProjectView"/>
+        </action>
+    </actions>
+</idea-plugin>

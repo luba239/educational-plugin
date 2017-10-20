@@ -191,26 +191,25 @@ configure(project(':Edu-Kotlin')) {
         props.store(twitterFile.newWriter(), null)
     }
     processResources.dependsOn(createTwitterProperties)
-
-    dependencies {
-        if (project.hasProperty('androidPath')) {
-            compileOnly files("${androidPath}/sdk-common.jar",
-                    "${androidPath}/android.jar",
-                    "${androidPath}/sdk-tools.jar",
-                    "${androidPath}/sdklib.jar")
-        }
-    }
 }
 
 configure(project(':Edu-Python')) {
     intellij.plugins "PythonCore:$pythonPluginVersion"
 }
 
+configure(project(':Edu-Android')) {
+    intellij.plugins 'android'
+
+    dependencies {
+        compile project(':Edu-Kotlin')
+    }
+}
+
 runIde.systemProperty("-Didea.is.internal", "true")
 runIde.systemProperty("-ea", "")
 
 dependencies {
-    compile project(':educational-core'), project(':Edu-Python'), project(':Edu-Kotlin'), project(':Edu-Java')
+    compile project(':educational-core'), project(':Edu-Python'), project(':Edu-Kotlin'), project(':Edu-Java'), project(':Edu-Android')
 }
 
 idea {
