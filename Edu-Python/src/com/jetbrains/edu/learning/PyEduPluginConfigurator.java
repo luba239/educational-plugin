@@ -4,6 +4,7 @@ import com.intellij.ide.fileTemplates.FileTemplate;
 import com.intellij.ide.fileTemplates.FileTemplateManager;
 import com.intellij.ide.fileTemplates.FileTemplateUtil;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.command.CommandProcessor;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.module.Module;
 import com.intellij.openapi.module.ModuleType;
@@ -63,19 +64,21 @@ public class PyEduPluginConfigurator implements EduPluginConfigurator {
                                        @NotNull Course course) {
     final Ref<VirtualFile> taskDirectory = new Ref<>();
     ApplicationManager.getApplication().runWriteAction(() -> {
-      String taskDirName = EduNames.TASK + task.getIndex();
-      try {
-        taskDirectory.set(VfsUtil.createDirectoryIfMissing(parentDirectory, taskDirName));
-      } catch (IOException e) {
-        LOG.error("Failed to create task directory", e);
-      }
-      if (taskDirectory.isNull()) return;
+      CommandProcessor.getInstance().runUndoTransparentAction(() -> {
+        String taskDirName = EduNames.TASK + task.getIndex();
+        try {
+          taskDirectory.set(VfsUtil.createDirectoryIfMissing(parentDirectory, taskDirName));
+        } catch (IOException e) {
+          LOG.error("Failed to create task directory", e);
+        }
+        if (taskDirectory.isNull()) return;
 
-      if (StudyUtils.isStudentProject(project) && !task.getTaskFiles().isEmpty()) {
-        createFilesFromText(task, taskDirectory.get());
-      } else {
-        createFilesFromTemplates(project, task, taskDirectory.get());
-      }
+        if (StudyUtils.isStudentProject(project) && !task.getTaskFiles().isEmpty()) {
+          createFilesFromText(task, taskDirectory.get());
+        } else {
+          createFilesFromTemplates(project, task, taskDirectory.get());
+        }
+      });
     });
     return taskDirectory.get();
   }

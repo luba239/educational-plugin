@@ -10,6 +10,7 @@ import com.intellij.ide.util.newProjectWizard.StepSequence;
 import com.intellij.ide.util.projectWizard.ProjectBuilder;
 import com.intellij.lang.Language;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.command.CommandProcessor;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.fileTypes.LanguageFileType;
 import com.intellij.openapi.module.Module;
@@ -97,33 +98,37 @@ public class EduIntellijUtils {
     if (lessonModule == null || utilModule == null) {
       return null;
     }
-    newModuleAction.createModuleFromWizard(project, null, new AbstractProjectWizard("", project, "") {
-      @Override
-      public StepSequence getSequence() {
-        return null;
-      }
 
-      @Override
-      public ProjectBuilder getProjectBuilder() {
-        return new EduTaskModuleBuilder(parentDirectory.getPath(), lessonDirName, task, utilModule) {
-          @Override
-          protected void createTask(Project project, Course course, VirtualFile src) throws IOException {
-            if (taskFileName == null) {
-              return;
-            }
+    CommandProcessor.getInstance().runUndoTransparentAction(() -> {
+      newModuleAction.createModuleFromWizard(project, null, new AbstractProjectWizard("", project, "") {
+        @Override
+        public StepSequence getSequence() {
+          return null;
+        }
 
-            if (course.isAdaptive()) {
-              createFromText(project, taskFileName, task);
-            } else {
-              createFromTemplate(project, src, taskFileName);
-              task.addTaskFile(taskFileName, task.taskFiles.size());
-              if (testFileName != null) {
-                createFromTemplate(project, src, testFileName);
+        @Override
+        public ProjectBuilder getProjectBuilder() {
+          return new EduTaskModuleBuilder(parentDirectory.getPath(), lessonDirName, task, utilModule) {
+            @Override
+            protected void createTask(Project project, Course course, VirtualFile src) throws IOException {
+              if (taskFileName == null) {
+                return;
+              }
+
+              if (course.isAdaptive()) {
+                createFromText(project, taskFileName, task);
+              }
+              else {
+                createFromTemplate(project, src, taskFileName);
+                task.addTaskFile(taskFileName, task.taskFiles.size());
+                if (testFileName != null) {
+                  createFromTemplate(project, src, testFileName);
+                }
               }
             }
-          }
-        };
-      }
+          };
+        }
+      });
     });
     return parentDirectory.findChild(EduNames.LESSON + task.getLesson().getIndex() + "-" + EduNames.TASK + task.getIndex());
   }

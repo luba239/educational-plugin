@@ -2,6 +2,7 @@ package com.jetbrains.edu.kotlin;
 
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.command.CommandProcessor;
 import com.intellij.openapi.externalSystem.model.ProjectSystemId;
 import com.intellij.openapi.externalSystem.service.execution.ProgressExecutionMode;
 import com.intellij.openapi.externalSystem.util.ExternalSystemUtil;
@@ -94,11 +95,13 @@ public class EduKotlinPluginConfigurator extends EduPluginConfiguratorBase {
     if (EduUtils.isAndroidStudio()) {
       EduKotlinCourseProjectGenerator.initTask(task);
       ApplicationManager.getApplication().runWriteAction(() -> {
-        try {
-          EduGradleModuleGenerator.createTaskModule(parentDirectory, task);
-        } catch (IOException e) {
-          LOG.error("Failed to create task");
-        }
+        CommandProcessor.getInstance().runUndoTransparentAction(() -> {
+          try {
+            EduGradleModuleGenerator.createTaskModule(parentDirectory, task);
+          } catch (IOException e) {
+            LOG.error("Failed to create task");
+          }
+        });
       });
 
       ExternalSystemUtil.refreshProjects(project, new ProjectSystemId("GRADLE"), true, ProgressExecutionMode.MODAL_SYNC);
