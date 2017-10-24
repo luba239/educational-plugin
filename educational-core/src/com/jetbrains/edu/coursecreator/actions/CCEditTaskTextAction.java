@@ -76,6 +76,14 @@ public class CCEditTaskTextAction extends ToggleAction implements DumbAware {
     super.update(e);
     if (!CCUtils.isCourseCreator(project)) {
       e.getPresentation().setEnabledAndVisible(false);
+      return;
     }
+
+    if (StudyUtils.getSelectedTaskFile(project) == null) {
+      e.getPresentation().setEnabled(false);
+      return;
+    }
+
+    e.getPresentation().setEnabledAndVisible(true);
   }
 }
