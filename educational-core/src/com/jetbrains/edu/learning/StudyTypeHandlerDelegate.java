@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.swing.event.HyperlinkEvent;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class StudyTypeHandlerDelegate extends TypedHandlerDelegate {
@@ -59,9 +60,10 @@ public class StudyTypeHandlerDelegate extends TypedHandlerDelegate {
         return Result.CONTINUE;
       }
       if (showBaloon) {
-        Integer toSubtask = Collections.max(placeholder.getSubtaskInfos().keySet().stream()
-                                              .filter(k -> k < ((TaskWithSubtasks)taskFile.getTask()).getActiveSubtaskIndex())
-                                              .collect(Collectors.toList()));
+        List<Integer> activeSubtasks = placeholder.getSubtaskInfos().keySet().stream()
+                .filter(k -> k < ((TaskWithSubtasks) taskFile.getTask()).getActiveSubtaskIndex())
+                .collect(Collectors.toList());
+        Integer toSubtask = activeSubtasks.isEmpty() ? 0 : Collections.max(activeSubtasks);
         int userVisibleSubtaskNum = toSubtask + 1;
         String text = String
           .format("<html>To edit this placeholder <a href=\"%s\">activate</a> it or <a href=\"%s\">switch to subtask %d</a></html>",
