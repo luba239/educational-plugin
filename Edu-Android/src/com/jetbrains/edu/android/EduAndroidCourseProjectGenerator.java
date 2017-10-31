@@ -21,12 +21,12 @@ import java.io.File;
 
 import static com.android.tools.idea.gradle.util.Projects.getBaseDirPath;
 
-class EduKotlinAndroidCourseProjectGenerator implements EduCourseProjectGenerator<Object> {
-  private static final Logger LOG = Logger.getInstance(EduKotlinAndroidCourseProjectGenerator.class);
+class EduAndroidCourseProjectGenerator implements EduCourseProjectGenerator<Object> {
+  private static final Logger LOG = Logger.getInstance(EduAndroidCourseProjectGenerator.class);
 
   private final Course myCourse;
 
-  public EduKotlinAndroidCourseProjectGenerator(Course course) {
+  public EduAndroidCourseProjectGenerator(Course course) {
     myCourse = course;
   }
 

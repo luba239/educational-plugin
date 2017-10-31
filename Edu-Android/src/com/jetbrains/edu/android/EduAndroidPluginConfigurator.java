@@ -35,20 +35,20 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
-public class EduKotlinAndroidPluginConfigurator extends EduKotlinPluginConfigurator {
+public class EduAndroidPluginConfigurator extends EduKotlinPluginConfigurator {
 
   private static final String DEFAULT_COURSE_PATH = "AndroidCourse.zip";
-  private static final Logger LOG = Logger.getInstance(EduKotlinAndroidPluginConfigurator.class);
+  private static final Logger LOG = Logger.getInstance(EduAndroidPluginConfigurator.class);
 
   @NotNull
   @Override
   public StudyTaskChecker<PyCharmTask> getPyCharmTaskChecker(@NotNull PyCharmTask pyCharmTask, @NotNull Project project) {
-    return new EduKotlinAndroidChecker(pyCharmTask, project);
+    return new EduAndroidChecker(pyCharmTask, project);
   }
 
   @Override
   public List<String> getBundledCoursePaths() {
-    File bundledCourseRoot = StudyUtils.getBundledCourseRoot(DEFAULT_COURSE_PATH, EduKotlinAndroidPluginConfigurator.class);
+    File bundledCourseRoot = StudyUtils.getBundledCourseRoot(DEFAULT_COURSE_PATH, EduAndroidPluginConfigurator.class);
     return Collections.singletonList(FileUtil.join(bundledCourseRoot.getAbsolutePath(), DEFAULT_COURSE_PATH));
   }
 
@@ -101,7 +101,7 @@ public class EduKotlinAndroidPluginConfigurator extends EduKotlinPluginConfigura
 
   @Override
   public EduCourseProjectGenerator<Object> getEduCourseProjectGenerator(@NotNull Course course) {
-    return new EduKotlinAndroidCourseProjectGenerator(course);
+    return new EduAndroidCourseProjectGenerator(course);
   }
 
 

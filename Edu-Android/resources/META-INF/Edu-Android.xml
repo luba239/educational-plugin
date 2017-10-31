@@ -4,15 +4,15 @@
 
     <application-components>
         <component>
-            <implementation-class>com.jetbrains.edu.android.EduKotlinAndroidApplicationComponent
+            <implementation-class>com.jetbrains.edu.android.EduAndroidApplicationComponent
             </implementation-class>
         </component>
     </application-components>
 
     <extensions defaultExtensionNs="Educational">
-        <pluginConfigurator language="edu-kotlin-android"
-                            implementationClass="com.jetbrains.edu.android.EduKotlinAndroidPluginConfigurator"/>
-        <checkListener implementation="com.jetbrains.edu.android.EduKotlinStudyCheckListener"/>
+        <pluginConfigurator language="edu-android"
+                            implementationClass="com.jetbrains.edu.android.EduAndroidPluginConfigurator"/>
+        <checkListener implementation="com.jetbrains.edu.android.EduAndroidStudyCheckListener"/>
     </extensions>
 
     <actions>

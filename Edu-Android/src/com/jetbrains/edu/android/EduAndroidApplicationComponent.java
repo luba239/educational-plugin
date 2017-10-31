@@ -4,10 +4,10 @@ import com.intellij.lang.Language;
 import com.intellij.openapi.components.ApplicationComponent;
 import org.jetbrains.annotations.NotNull;
 
-public class EduKotlinAndroidApplicationComponent implements ApplicationComponent {
+public class EduAndroidApplicationComponent implements ApplicationComponent {
   @Override
   public void initComponent() {
-    new Language("edu-kotlin-android") {
+    new Language("edu-android") {
       @NotNull
       @Override
       public String getDisplayName() {
@@ -24,6 +24,6 @@ public class EduKotlinAndroidApplicationComponent implements ApplicationComponen
   @NotNull
   @Override
   public String getComponentName() {
-    return "kotlin android";
+    return "edu android";
   }
 }

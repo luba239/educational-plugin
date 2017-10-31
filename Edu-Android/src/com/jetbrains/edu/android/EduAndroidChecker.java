@@ -33,12 +33,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 
-class EduKotlinAndroidChecker extends StudyTaskChecker<PyCharmTask> {
+class EduAndroidChecker extends StudyTaskChecker<PyCharmTask> {
   private static final String BUILD_SUCCESSFUL = "BUILD SUCCESSFUL";
   private static final String GRADLEW = "../gradlew";
   private static final String CONNECTED_ANDROID_TEST = "connectedAndroidTest";
 
-  public EduKotlinAndroidChecker(@NotNull PyCharmTask task, @NotNull Project project) {
+  public EduAndroidChecker(@NotNull PyCharmTask task, @NotNull Project project) {
     super(task, project);
   }
 

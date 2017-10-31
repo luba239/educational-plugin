@@ -16,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.IOException;
 
 
-public class EduKotlinStudyCheckListener implements StudyCheckListener {
+public class EduAndroidStudyCheckListener implements StudyCheckListener {
 
   @Override
   public void beforeCheck(@NotNull Project project, @NotNull Task task) {
@@ -49,7 +49,7 @@ public class EduKotlinStudyCheckListener implements StudyCheckListener {
           FileDocumentManager.getInstance().saveDocument(testPropertiesDocument);
         }
       } catch (IOException e) {
-        Logger.getInstance(EduKotlinStudyCheckListener.class).warn(e.getMessage());
+        Logger.getInstance(EduAndroidStudyCheckListener.class).warn(e.getMessage());
       }
     }));
   }
