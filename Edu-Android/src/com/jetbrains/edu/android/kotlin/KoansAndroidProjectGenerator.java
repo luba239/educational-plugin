@@ -1,4 +1,4 @@
-package com.jetbrains.edu.kotlin;
+package com.jetbrains.edu.android.kotlin;
 
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
@@ -23,8 +23,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 
-import static com.jetbrains.edu.kotlin.EduKotlinPluginConfigurator.initTask;
-
 public class KoansAndroidProjectGenerator extends EduIntellijCourseProjectGeneratorBase {
 
   private static final Logger LOG = Logger.getInstance(KoansAndroidProjectGenerator.class);
@@ -43,7 +41,7 @@ public class KoansAndroidProjectGenerator extends EduIntellijCourseProjectGenera
           Task task = new CCCreateTask().createAndInitItem(myCourse, lesson, EduNames.TASK + 1, 1);
           lesson.addTask(task);
           myCourse.getLessons(true).add(lesson);
-          initTask(task);
+          EduKotlinAndroidPluginConfigurator.initTask(task);
         }
         Course course = myCourse;
         if (course instanceof RemoteCourse) {

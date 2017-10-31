@@ -2,6 +2,7 @@ package com.jetbrains.edu.kotlin;
 
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.externalSystem.model.ProjectSystemId;
 import com.intellij.openapi.externalSystem.service.execution.ProgressExecutionMode;
 import com.intellij.openapi.externalSystem.util.ExternalSystemUtil;
@@ -37,12 +38,14 @@ import java.util.List;
 
 public class EduKotlinPluginConfigurator extends EduPluginConfiguratorBase {
 
+  private static final Logger LOG = Logger.getInstance(EduKotlinPluginConfigurator.class);
+
   static final String LEGACY_TESTS_KT = "tests.kt";
-  static final String TESTS_KT = "Tests.kt";
-  private static final String TASK_KT = "Task.kt";
-  private final Collection<String> NAMES_TO_EXCLUDE = ContainerUtil.newHashSet(
-    "gradlew", "gradlew.bat", "local.properties", "gradle.properties", "build.gradle"
-    , "settings.gradle", "gradle-wrapper.jar", "gradle-wrapper.properties");
+  public static final String TESTS_KT = "Tests.kt";
+  public static final String TASK_KT = "Task.kt";
+//  private final Collection<String> NAMES_TO_EXCLUDE = ContainerUtil.newHashSet(
+//    "gradlew", "gradlew.bat", "local.properties", "gradle.properties", "build.gradle"
+//    , "settings.gradle", "gradle-wrapper.jar", "gradle-wrapper.properties");
 
   @NotNull
   @Override
@@ -56,20 +59,20 @@ public class EduKotlinPluginConfigurator extends EduPluginConfiguratorBase {
     return TESTS_KT.equals(name) || LEGACY_TESTS_KT.equals(name) || name.contains(FileUtil.getNameWithoutExtension(TESTS_KT)) && name.contains(EduNames.SUBTASK_MARKER);
   }
 
-  @Override
-  public boolean excludeFromArchive(@NotNull String path) {
-    boolean excluded = super.excludeFromArchive(path);
-    if (!EduUtils.isAndroidStudio() || excluded) {
-      return excluded;
-    }
-    return path.contains("build") || NAMES_TO_EXCLUDE.contains(PathUtil.getFileName(path));
-
-  }
+//  @Override
+//  public boolean excludeFromArchive(@NotNull String path) {
+//    boolean excluded = super.excludeFromArchive(path);
+//    if (!EduUtils.isAndroidStudio() || excluded) {
+//      return excluded;
+//    }
+//    return path.contains("build") || NAMES_TO_EXCLUDE.contains(PathUtil.getFileName(path));
+//
+//  }
 
   @NotNull
   @Override
   public StudyTaskChecker<PyCharmTask> getPyCharmTaskChecker(@NotNull PyCharmTask pyCharmTask, @NotNull Project project) {
-    return EduUtils.isAndroidStudio() ? new EduKotlinAndroidPyCharmTaskChecker(pyCharmTask, project) : new EduKotlinPyCharmTaskChecker(pyCharmTask, project);
+    return new EduKotlinPyCharmTaskChecker(pyCharmTask, project);
   }
 
   @NotNull
@@ -93,19 +96,6 @@ public class EduKotlinPluginConfigurator extends EduPluginConfiguratorBase {
   @Override
   public VirtualFile createTaskContent(@NotNull Project project, @NotNull Task task,
                                        @NotNull VirtualFile parentDirectory, @NotNull Course course) {
-    if (EduUtils.isAndroidStudio()) {
-      initTask(task);
-      ApplicationManager.getApplication().runWriteAction(() -> {
-        try {
-          EduGradleModuleGenerator.createTaskModule(parentDirectory, task);
-        } catch (IOException e) {
-          LOG.error("Failed to create task");
-        }
-      });
-
-      ExternalSystemUtil.refreshProjects(project, new ProjectSystemId("GRADLE"), true, ProgressExecutionMode.MODAL_SYNC);
-      return parentDirectory.findChild(EduNames.TASK + task.getIndex());
-    }
     return EduIntellijUtils.createTask(project, task, parentDirectory, TASK_KT, TESTS_KT);
   }
 
@@ -117,8 +107,7 @@ public class EduKotlinPluginConfigurator extends EduPluginConfiguratorBase {
 
   @Override
   public EduCourseProjectGenerator<Object> getEduCourseProjectGenerator(@NotNull Course course) {
-    return EduUtils.isAndroidStudio() ? new KoansAndroidProjectGenerator(course)
-            : new EduKotlinCourseProjectGenerator(course);
+    return new EduKotlinCourseProjectGenerator(course);
   }
 
   @Nullable
@@ -127,12 +116,8 @@ public class EduKotlinPluginConfigurator extends EduPluginConfiguratorBase {
     return KotlinIcons.SMALL_LOGO;
   }
 
-  static void initTask(@NotNull Task task) {
-    TaskFile taskFile = new TaskFile();
-    taskFile.setTask(task);
-    taskFile.name  = TASK_KT;
-    taskFile.text = EduUtils.getTextFromInternalTemplate(TASK_KT);
-    task.addTaskFile(taskFile);
-    task.getTestsText().put(TESTS_KT, EduUtils.getTextFromInternalTemplate(TESTS_KT));
+  @Override
+  public boolean isEnabled() {
+    return !EduUtils.isAndroidStudio();
   }
 }

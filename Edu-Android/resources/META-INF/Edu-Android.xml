@@ -12,6 +12,8 @@
     <extensions defaultExtensionNs="Educational">
         <pluginConfigurator language="edu-android"
                             implementationClass="com.jetbrains.edu.android.EduAndroidPluginConfigurator"/>
+        <pluginConfigurator language="kotlin"
+                            implementationClass="com.jetbrains.edu.android.kotlin.EduKotlinAndroidPluginConfigurator"/>
         <checkListener implementation="com.jetbrains.edu.android.EduAndroidStudyCheckListener"/>
     </extensions>
 

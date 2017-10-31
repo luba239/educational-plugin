@@ -3,9 +3,7 @@ package com.jetbrains.edu.coursecreator.ui
 import com.intellij.ide.impl.ProjectUtil
 import com.intellij.lang.Language
 import com.intellij.lang.LanguageExtensionPoint
-import com.intellij.lang.java.JavaLanguage
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.extensions.Extensions
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.ui.ComboBox
 import com.intellij.openapi.ui.LabeledComponent
@@ -22,7 +20,7 @@ import com.intellij.ui.layout.panel
 import com.intellij.util.ui.JBUI
 import com.jetbrains.edu.coursecreator.CCUtils
 import com.jetbrains.edu.learning.EduPluginConfigurator
-import com.jetbrains.edu.learning.core.EduUtils
+import com.jetbrains.edu.learning.EduPluginConfiguratorManager
 import com.jetbrains.edu.learning.courseFormat.Course
 import com.jetbrains.edu.learning.newproject.EduCourseProjectGenerator
 import com.jetbrains.edu.learning.newproject.ui.EduAdvancedSettings
@@ -178,7 +176,7 @@ class CCNewCoursePanel : JPanel() {
       }
     }
 
-    val configurator = EduPluginConfigurator.INSTANCE.forLanguage(language) ?: return
+    val configurator = EduPluginConfiguratorManager.forLanguage(language) ?: return
     myCourse.language = language.id
     myProjectGenerator = configurator.getEduCourseProjectGenerator(myCourse)
 
@@ -188,7 +186,7 @@ class CCNewCoursePanel : JPanel() {
   }
 
   private fun collectSupportedLanguages() {
-    Extensions.getExtensions<LanguageExtensionPoint<EduPluginConfigurator<*>>>(EduPluginConfigurator.EP_NAME, null)
+    EduPluginConfiguratorManager.allExtensions()
             .mapNotNull { extension -> obtainLanguageData(extension) }
             .sortedBy { (language, _) -> language.displayName }
             .forEach { myLanguageComboBox.addItem(it) }
@@ -199,14 +197,6 @@ class CCNewCoursePanel : JPanel() {
     val language = Language.findLanguageByID(languageId)
     if (language == null) {
       LOG.info("Language with id $languageId not found")
-      return null
-    }
-    // Order of conditions is important here
-    // because some IDEs (for example PyCharm) don't have `JavaLanguage` class in classpath
-    // and if we try to load `JavaLanguage` we will get `java.lang.NoClassDefFoundError`.
-    // But we are sure that AndroidStudio has `JavaLanguage` class in its classpath.
-    if (EduUtils.isAndroidStudio() && language == JavaLanguage.INSTANCE) {
-      // there should be no Java support in AS
       return null
     }
     return LanguageData(language, extension.instance.logo)

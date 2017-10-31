@@ -14,6 +14,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.roots.ModifiableRootModel;
 import com.intellij.openapi.util.InvalidDataException;
 import com.jetbrains.edu.learning.EduPluginConfigurator;
+import com.jetbrains.edu.learning.EduPluginConfiguratorManager;
 import com.jetbrains.edu.learning.StudyTaskManager;
 import com.jetbrains.edu.learning.courseFormat.Course;
 import com.jetbrains.edu.learning.intellij.generation.EduProjectGenerator;
@@ -32,7 +33,7 @@ class EduRemoteCourseModuleBuilder extends ModuleBuilder {
 
   public EduRemoteCourseModuleBuilder(Course course) {
     myCourse = course;
-    myModuleType = EduPluginConfigurator.INSTANCE.forLanguage(myCourse.getLanguageById()).getModuleType();
+    myModuleType = EduPluginConfiguratorManager.forLanguage(myCourse.getLanguageById()).getModuleType();
     myModuleBuilder = myModuleType.createModuleBuilder();
   }
 
@@ -48,7 +49,7 @@ class EduRemoteCourseModuleBuilder extends ModuleBuilder {
     if (language == null) {
       return module;
     }
-    EduPluginConfigurator configurator = EduPluginConfigurator.INSTANCE.forLanguage(language);
+    EduPluginConfigurator configurator = EduPluginConfiguratorManager.forLanguage(language);
     if (configurator == null) {
       return module;
     }
@@ -76,7 +77,7 @@ class EduRemoteCourseModuleBuilder extends ModuleBuilder {
     String languageName = myCourse.getLanguageID();
     Language language = Language.findLanguageByID(languageName);
     if (language != null) {
-      EduPluginConfigurator configurator = EduPluginConfigurator.INSTANCE.forLanguage(language);
+      EduPluginConfigurator configurator = EduPluginConfiguratorManager.forLanguage(language);
       if (configurator != null) {
         Project project = baseModule.getProject();
         myGenerator.setSelectedCourse(myCourse);

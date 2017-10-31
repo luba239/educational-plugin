@@ -1,6 +1,5 @@
 package com.jetbrains.edu.learning;
 
-import com.intellij.lang.LanguageExtension;
 import com.intellij.openapi.actionSystem.ActionManager;
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.application.ApplicationManager;
@@ -35,7 +34,6 @@ import java.util.Objects;
 
 public interface EduPluginConfigurator<S> {
   String EP_NAME = "Educational.pluginConfigurator";
-  LanguageExtension<EduPluginConfigurator> INSTANCE = new LanguageExtension<>(EP_NAME);
 
   Logger LOG = Logger.getInstance(EduPluginConfigurator.class);
 
@@ -111,7 +109,7 @@ public interface EduPluginConfigurator<S> {
 
   /**
    * Used for code highlighting in Task Description tool window
-   * Example in <a href="https://github.com/JetBrains/intellij-community/tree/master/python/educational-python/Edu-Python">Edu Python</a> plugin
+   * Example in <a href="https://github.com/JetBrains/educational-plugins/tree/master/Edu-Python">Edu Python</a> plugin
    */
   @NotNull
   default String getLanguageScriptUrl() {
@@ -144,7 +142,7 @@ public interface EduPluginConfigurator<S> {
   /**
    * Configures (adds libraries for example) task module for languages that require modules
    * <br>
-   * Example in <a href="https://github.com/JetBrains/educational-plugins/tree/master/Edu-Utils/Edu-Kotlin">Edu Kotlin</a> plugin
+   * Example in <a href="https://github.com/JetBrains/educational-plugins/tree/master/Edu-Kotlin">Edu Kotlin</a> plugin
    */
   default void configureModule(@NotNull Module module) {
   }
@@ -152,7 +150,7 @@ public interface EduPluginConfigurator<S> {
   /**
    * Creates module structure for given course
    * <br>
-   * Example in <a href="https://github.com/JetBrains/educational-plugins/tree/master/Edu-Utils/Edu-Kotlin">Edu Kotlin</a> plugin
+   * Example in <a href="https://github.com/JetBrains/educational-plugins/tree/master/Edu-Kotlin">Edu Kotlin</a> plugin
    */
   default void createCourseModuleContent(@NotNull ModifiableModuleModel moduleModel,
                                          @NotNull Project project,
@@ -198,5 +196,16 @@ public interface EduPluginConfigurator<S> {
   @Nullable
   default Icon getLogo() {
     return null;
+  }
+
+  /**
+   * Allows to determine if configurator can be used in current environment or not.
+   *
+   * @return true if configurator can be used, false otherwise
+   *
+   * @see EduPluginConfiguratorManager
+   */
+  default boolean isEnabled() {
+    return true;
   }
 }

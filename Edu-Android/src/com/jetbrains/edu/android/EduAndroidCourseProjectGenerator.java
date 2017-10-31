@@ -8,7 +8,7 @@ import com.intellij.openapi.project.DumbModePermission;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.jetbrains.edu.learning.EduPluginConfigurator;
+import com.jetbrains.edu.learning.EduPluginConfiguratorManager;
 import com.jetbrains.edu.learning.StudyUtils;
 import com.jetbrains.edu.learning.courseFormat.Course;
 import com.jetbrains.edu.learning.intellij.generation.EduGradleModuleGenerator;
@@ -43,7 +43,7 @@ class EduAndroidCourseProjectGenerator implements EduCourseProjectGenerator<Obje
     generator.generateProject(project, project.getBaseDir());
     myCourse.setCourseType("Tutorial");
 
-    EduPluginConfigurator.INSTANCE.forLanguage(myCourse.getLanguageById())
+    EduPluginConfiguratorManager.forLanguage(myCourse.getLanguageById())
             .createCourseModuleContent(ModuleManager.getInstance(project).getModifiableModel(),
             project, myCourse, project.getBasePath());
     ApplicationManager.getApplication().invokeLater(() -> DumbService.allowStartingDumbModeInside(DumbModePermission.MAY_START_BACKGROUND,
